@@ -6,8 +6,9 @@ const HomeScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
+    // Ocultar o header ( Titulo )
     navigation.setOptions({ headerShown: false });
-  }, [navigation]); 
+  }, [navigation]);
 
   const handleNavigation = (screenName) => {
     navigation.navigate(screenName);
@@ -15,39 +16,54 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Menu</Text> 
+      <Text style={styles.title}>Menu</Text>
       <View style={styles.gridContainer}>
+        {/* Card 1 */}
         <TouchableOpacity
-          style={styles.card}
-          onPress={() => handleNavigation("ListScreen")} 
+          style={[styles.card, { backgroundColor: "#2e97b7" }]} // Cor personalizada
+          onPress={() => handleNavigation("ListScreen")}
         >
-          <Image style={styles.icon} source={require('../../assets/olharlista.png')} />
+          <Image
+            style={styles.icon}
+            source={require("../../assets/olharlista.png")} // Verifique o caminho da imagem
+          />
           <Text style={styles.cardTitle}>Ver Lista</Text>
         </TouchableOpacity>
 
+        {/* Card 2 */}
         <TouchableOpacity
-          style={styles.card}
-          onPress={() => handleNavigation("AddProductScreen")} 
+          style={[styles.card, { backgroundColor: "#0b8770" }]} // Cor personalizada
+          onPress={() => handleNavigation("AddProductScreen")}
         >
-          <Image style={styles.icon} source={require('../../assets/addproduto.png')} />
+          <Image
+            style={styles.icon}
+            source={require("../../assets/addproduto.png")} // Verifique o caminho da imagem
+          />
           <Text style={styles.cardTitle}>Add Produto</Text>
         </TouchableOpacity>
 
+        {/* Card 3 */}
         <TouchableOpacity
-          style={styles.card}
-          onPress={() => handleNavigation("SettingsScreen")} 
+          style={[styles.card, { backgroundColor: "#142f30" }]} // Cor personalizada
+          onPress={() => handleNavigation("SettingsScreen")}
         >
-          <Image style={styles.icon} source={require('../../assets/configuracao.png')} />
+          <Image
+            style={styles.icon}
+            source={require("../../assets/configuracao.png")} // Verifique o caminho da imagem
+          />
           <Text style={styles.cardTitle}>Configurações</Text>
         </TouchableOpacity>
 
-        {/* Outros cartões */}
-        <TouchableOpacity style={styles.card}>
-          <Image style={styles.icon} source={require('../../assets/manutencao.png')} />
-          <Text style={styles.cardTitle}>Em Construção</Text>
+        {/* Card 4 */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: "#b7833a" }]} // Cor personalizada
+        >
+          <Image
+            style={styles.icon}
+            source={require("../../assets/manutencao.png")} // Verifique o caminho da imagem
+          />
+          <Text style={styles.cardTitle}>Em Dev</Text>
         </TouchableOpacity>
-        
-        {/* Adicione mais cartões conforme necessário */}
       </View>
     </View>
   );
@@ -59,36 +75,40 @@ const styles = StyleSheet.create({
     padding: 25,
     backgroundColor: "#FAFAFA",
   },
+  // Titulo da HomeScreen
   title: {
     fontSize: 48,
     fontWeight: "bold",
-    color: "#333", // Cor do título
+    color: "#333",
     textAlign: "center",
     marginBottom: 16,
   },
+  // Propriedades dos Cards ( Espacial )
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
   },
+  // Propriedades dos Cards ( Cards )
   card: {
-    width: "45%", 
+    width: "45%",
     margin: 8,
-    backgroundColor: "#fff",
     borderRadius: 25,
     elevation: 8,
     padding: 26,
     alignItems: "center",
     justifyContent: "center",
   },
+  // Ícones dos Cards
   icon: {
     width: 64,
     height: 64,
     marginBottom: 8,
   },
+  // Títulos dos Cards
   cardTitle: {
-    fontSize: 16,
-    color: "#000",
+    fontSize: 18,
+    color: "#fafafa",
     textAlign: "center",
     fontWeight: "bold",
   },

@@ -1,30 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const EntryScreen = () => {
   const [loading, setLoading] = useState(true);
+  const [dots, setDots] = useState('');
   const navigation = useNavigation();
 
   useEffect(() => {
-    
-      navigation.setOptions({ headerShown: false }); // Desabilita o header
+    // Ocultar o header ( Titulo )
+    navigation.setOptions({ headerShown: false });
 
+    // Timer para navegar para a HomeScreen após 5 segundos
     const timer = setTimeout(() => {
       setLoading(false);
       navigation.navigate('HomeScreen');
     }, 5000);
 
-    return () => clearTimeout(timer);
+    // Animação dos três pontos
+    const dotsInterval = setInterval(() => {
+      setDots((prevDots) => (prevDots.length < 3 ? prevDots + '.' : ''));
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(dotsInterval);
+    };
   }, [navigation]);
 
   return (
     <View style={styles.container}>
       {/* Logo */}
-      <Image
-        source={require('../../assets/Logo.png')}
-        style={styles.logo}
-      />
+      <Image source={require('../../assets/Logo.png')} style={styles.logo} />
 
       {/* Mensagem de boas-vindas */}
       <Text style={styles.title}>Bem-vindo ao Gestão+!</Text>
@@ -34,33 +41,33 @@ const EntryScreen = () => {
         Versão: 0.0.98{'\n'}Desenvolvido por Daniel
       </Text>
 
-      {/* Barra de carregamento */}
+      {/* Animação de pontos crescendo */}
       {loading && (
-        <ActivityIndicator size="large" color="#0000ff" style={styles.progressBar} />
+        <Text style={styles.loadingText}>{dots}</Text>
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+
+  // Fundo do Screen de Carregamento
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fcfcfc',
     padding: 16,
   },
-
-  // logo de Inicio
+// Logo de Entrada
   logo: {
-    width: '80%', // Ajusta a largura para 80% da tela
-    height: undefined, // Permite que a altura seja ajustada automaticamente
-    aspectRatio: 314 / 222, // Mantém a proporção correta da imagem
+    width: '80%',
+    height: undefined,
+    aspectRatio: 314 / 222,
     marginBottom: 32,
-    resizeMode: 'contain', // Garante que a imagem não seja cortada
+    resizeMode: 'contain',
   },
-
-  // Título de Boas Vindas 
+// Titulo de Entrada
   title: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -68,17 +75,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
   },
-
-  // Versão de Aplicativo
+// Versão de Entrada
   versionInfo: {
     fontSize: 14,
     color: 'gray',
     textAlign: 'center',
     marginTop: 16,
   },
-
-  // Ícone de Progresso
-  progressBar: {
+// Carregamento ( em Pontos )
+  loadingText: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: '#005a0a',
     marginTop: 32,
   },
 });
