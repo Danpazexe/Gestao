@@ -1,68 +1,79 @@
 import React, { useEffect } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import LottieView from "lottie-react-native";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    // Ocultar o header ( Titulo )
+    // Ocultar o header (Título)
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const handleNavigation = (screenName) => {
-    navigation.navigate(screenName);
+  const handleNavigation = (screen) => {
+    navigation.navigate(screen);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Menu</Text>
       <View style={styles.gridContainer}>
-        {/* Card 1 */}
+        {/* Card 1: Ver Lista */}
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: "#2e97b7" }]} // Cor personalizada
+          style={[styles.card, { backgroundColor: "#2e97b7" }]}
           onPress={() => handleNavigation("ListScreen")}
         >
-          <Image
+          <LottieView
+            source={require("../../assets/VerLista.json")} 
             style={styles.icon}
-            source={require("../../assets/olharlista.png")} // Verifique o caminho da imagem
+            autoPlay
+            loop
+            speed={0.3} 
           />
           <Text style={styles.cardTitle}>Ver Lista</Text>
         </TouchableOpacity>
 
-        {/* Card 2 */}
+        {/* Card 2: Add Produto */}
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: "#0b8770" }]} // Cor personalizada
+          style={[styles.card, { backgroundColor: "#0b8770" }]}
           onPress={() => handleNavigation("AddProductScreen")}
         >
-          <Image
+          <LottieView
+            source={require("../../assets/AddProd.json")} 
             style={styles.icon}
-            source={require("../../assets/addproduto.png")} // Verifique o caminho da imagem
+            autoPlay
+            loop
+            speed={0.3} 
           />
           <Text style={styles.cardTitle}>Add Produto</Text>
         </TouchableOpacity>
 
-        {/* Card 3 */}
+        {/* Card 3: Configurações */}
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: "#142f30" }]} // Cor personalizada
+          style={[styles.card, { backgroundColor: "#142f30" }]}
           onPress={() => handleNavigation("SettingsScreen")}
         >
-          <Image
+          <LottieView
+            source={require("../../assets/Config.json")} 
             style={styles.icon}
-            source={require("../../assets/configuracao.png")} // Verifique o caminho da imagem
+            autoPlay
+            loop
+            speed={0.3} 
           />
           <Text style={styles.cardTitle}>Configurações</Text>
         </TouchableOpacity>
 
-        {/* Card 4 */}
-        <TouchableOpacity
-          style={[styles.card, { backgroundColor: "#b7833a" }]} // Cor personalizada
-        >
-          <Image
+        {/* Card 4: Em Desenvolvimento */}
+        <TouchableOpacity style={[styles.card, { backgroundColor: "#be5e46" }]}>
+          <LottieView
+            source={require("../../assets/Build.json")} 
             style={styles.icon}
-            source={require("../../assets/manutencao.png")} // Verifique o caminho da imagem
+            autoPlay
+            loop
+            speed={0.3} 
           />
-          <Text style={styles.cardTitle}>Em Dev</Text>
+          <Text style={styles.cardTitle}>Ajustando</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -70,42 +81,48 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
+
+  //Fundo do Meu Menu
   container: {
     flex: 1,
     padding: 25,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#ffffff",
   },
-  // Titulo da HomeScreen
+
+  // Titulo ( menu )
   title: {
     fontSize: 48,
     fontWeight: "bold",
-    color: "#333",
+    color: "rgb(48, 48, 48)",
     textAlign: "center",
     marginBottom: 16,
   },
-  // Propriedades dos Cards ( Espacial )
+
+  // Config de Grade
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
   },
-  // Propriedades dos Cards ( Cards )
+
+  // Config dos Cards
   card: {
     width: "45%",
-    margin: 8,
+    margin: 6,
     borderRadius: 25,
     elevation: 8,
-    padding: 26,
+    padding: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  // Ícones dos Cards
+  // Config dos Ícones
   icon: {
-    width: 64,
-    height: 64,
-    marginBottom: 8,
+    width: 100,
+    height: 100,
+    marginBottom: 5,
   },
-  // Títulos dos Cards
+
+  // Config dos Títulos dos Cards
   cardTitle: {
     fontSize: 18,
     color: "#fafafa",

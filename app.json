@@ -1,26 +1,44 @@
 {
   "expo": {
-    "name": "Gestao",
+    "name": "gestao",
     "slug": "Gestao",
     "version": "0.0.1",
     "orientation": "portrait",
-    "icon": "./assets/Logo.png",
+    "icon": "./assets/LogoApp.png",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/LogoAppSplash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.avante.Gestao"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/Logo.png",
+        "foregroundImage": "./assets/LogoAppAdapt.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.pazzdan.gestao",
+      "permissions": [
+        "CAMERA",
+        "INTERNET"
+      ],
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
-      "favicon": "./assets/Logo.png"
-    }
+      "favicon": "./assets/LogoApp.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8e4744f6-9b2a-497f-99bd-f44b4a10cfb9"
+      }
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "privacy": "public",
+    "githubUrl": "https://github.com/usuario/gestao"
   }
 }
