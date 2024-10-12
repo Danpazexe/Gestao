@@ -2,7 +2,7 @@
   "expo": {
     "name": "gestao",
     "slug": "Gestao",
-    "version": "0.0.1",
+    "version": "0.0.3",
     "orientation": "portrait",
     "icon": "./assets/LogoApp.png",
     "userInterfaceStyle": "light",
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/LogoAppAdapt.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.pazzdan.gestao",
+      "package": "com.avante.gestao",
       "permissions": [
         "CAMERA",
         "INTERNET"

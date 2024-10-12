@@ -25,7 +25,7 @@ const HomeScreen = () => {
           onPress={() => handleNavigation("ListScreen")}
         >
           <LottieView
-            source={require("../../assets/VerLista.json")} 
+            source={require("../../assets/GifMenu/VerLista.json")} 
             style={styles.icon}
             autoPlay
             loop
@@ -40,7 +40,7 @@ const HomeScreen = () => {
           onPress={() => handleNavigation("AddProductScreen")}
         >
           <LottieView
-            source={require("../../assets/AddProd.json")} 
+            source={require("../../assets/GifMenu/AddProd.json")} 
             style={styles.icon}
             autoPlay
             loop
@@ -55,7 +55,7 @@ const HomeScreen = () => {
           onPress={() => handleNavigation("SettingsScreen")}
         >
           <LottieView
-            source={require("../../assets/Config.json")} 
+            source={require("../../assets/GifMenu/Config.json")} 
             style={styles.icon}
             autoPlay
             loop
@@ -67,7 +67,7 @@ const HomeScreen = () => {
         {/* Card 4: Em Desenvolvimento */}
         <TouchableOpacity style={[styles.card, { backgroundColor: "#be5e46" }]}>
           <LottieView
-            source={require("../../assets/Build.json")} 
+            source={require("../../assets/GifMenu/Build.json")} 
             style={styles.icon}
             autoPlay
             loop
@@ -117,14 +117,14 @@ const styles = StyleSheet.create({
   },
   // Config dos Ícones
   icon: {
-    width: 100,
-    height: 100,
+    width: 50,
+    height: 50,
     marginBottom: 5,
   },
 
   // Config dos Títulos dos Cards
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#fafafa",
     textAlign: "center",
     fontWeight: "bold",
