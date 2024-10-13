@@ -36,7 +36,7 @@ const HomeScreen = () => {
 
         {/* Card 2: Add Produto */}
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: "#0b8770" }]}
+          style={[styles.card, { backgroundColor: "#5d7e62" }]}
           onPress={() => handleNavigation("AddProductScreen")}
         >
           <LottieView
