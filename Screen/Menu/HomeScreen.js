@@ -51,7 +51,7 @@ const HomeScreen = () => {
 
         {/* Card 3: Configurações */}
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: "#142f30" }]}
+          style={[styles.card, { backgroundColor: "#6cb6a5" }]}
           onPress={() => handleNavigation("SettingsScreen")}
         >
           <LottieView
