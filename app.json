@@ -2,7 +2,7 @@
   "expo": {
     "name": "gestao",
     "slug": "Gestao",
-    "version": "0.0.61",
+    "version": "0.0.6",
     "orientation": "portrait",
     "icon": "./assets/LogoApp.png",
     "userInterfaceStyle": "light",
