@@ -1,4 +1,4 @@
-# App de Gestão de Produtos de Validade
+# App de Gestão de Produtos e Validade
 
 Este aplicativo permite gerenciar produtos e monitorar suas datas de validade. 
 É desenvolvido em **React Native** com **Expo** e 
