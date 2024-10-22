@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 // Componente para exibir detalhes sobre um produto
-const ProductItem = ({ product }) => {
+const ProductItem = ({ product, isDarkMode }) => {
   // Função para determinar o texto e cor de acordo com os dias restantes até a validade
   const getDaysToExpirationText = (days) => {
     if (days === 0) {
@@ -23,56 +23,44 @@ const ProductItem = ({ product }) => {
   const { number, label, color } = getDaysToExpirationText(daysRemaining);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
       <View style={styles.productDetails}>
-
-
-
-
-
         {/* Informações do Produto */}
-
-        <Text style={styles.productName}>{product.name}</Text>
+        <Text style={[styles.productName, isDarkMode && styles.darkProductName]}>{product.name}</Text>
 
         {/* Detalhes do Produto */}
-        
         <View style={styles.row}>
-          <MaterialIcons name="code" size={20} color="#757575" style={styles.icon} />
-          <Text style={styles.label}>Código Interno:</Text>
-          <Text style={styles.value}>{product.internalCode}</Text>
+          <MaterialIcons name="code" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
+          <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Código Interno:</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.internalCode}</Text>
         </View>
 
         <View style={styles.row}>
-          <MaterialIcons name="format-list-numbered" size={20} color="#757575" style={styles.icon} />
-          <Text style={styles.label}>Quantidade:</Text>
-          <Text style={styles.value}>{product.quantity}</Text>
+          <MaterialIcons name="format-list-numbered" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
+          <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Quantidade:</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.quantity}</Text>
         </View>
 
         <View style={styles.row}>
-          <MaterialIcons name="qr-code" size={20} color="#757575" style={styles.icon} />
-          <Text style={styles.label}>EAN:</Text>
-          <Text style={styles.value}>{product.ean}</Text>
+          <MaterialIcons name="qr-code" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
+          <Text style={[styles.label, isDarkMode && styles.darkLabel]}>EAN:</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.ean}</Text>
         </View>
 
         <View style={styles.row}>
-          <MaterialIcons name="label" size={20} color="#757575" style={styles.icon} />
-          <Text style={styles.label}>Lote:</Text>
-          <Text style={styles.value}>{product.batch}</Text>
+          <MaterialIcons name="label" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
+          <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Lote:</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.batch}</Text>
         </View>
 
         <View style={styles.row}>
-          <MaterialIcons name="event" size={20} color="#757575" style={styles.icon} />
-          <Text style={styles.label}>Validade:</Text>
-          <Text style={styles.value}>{product.expirationDate}</Text>
+          <MaterialIcons name="event" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
+          <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Validade:</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.expirationDate}</Text>
         </View>
       </View>
 
-
-
-
       {/* Dias Restantes até a Expiração */}
-
-
       <View style={[styles.remainingDaysContainer, { borderColor: color }]}>
         <Text style={[styles.daysRemaining, { color: color }]}>{number}</Text>
         <Text style={[styles.daysLabel, { color: color }]}>{label}</Text>
@@ -82,58 +70,73 @@ const ProductItem = ({ product }) => {
 };
 
 const styles = StyleSheet.create({
-  // Estilo do contêiner principal do componente
+  
   container: {
     flexDirection: 'row',
-    padding: 6,
-    alignItems: 'center'
+    padding: 10,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 10,
+    elevation: 2,
   },
-  // Estilo do contêiner de detalhes do produto
+  darkContainer: {
+    backgroundColor: '#2e2e2e', 
+  },
+  
   productDetails: {
     flex: 3,
-    paddingRight: 2,
+    paddingRight: 3,
   },
-  // Estilo do nome do produto
+  
   productName: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 6,
     color: '#37474F',
   },
-  // Estilo das linhas de informações do produto
+  darkProductName: {
+    color: '#2b879e', 
+  },
+  
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 1,
   },
-  // Estilo dos ícones usados nas linhas de informações do produto
+  
   icon: {
     marginRight: 6,
   },
-  // Estilo do rótulo (título) de cada linha de informação do produto
+  
   label: {
     fontWeight: '600',
     fontSize: 14,
     color: '#757575',
   },
-  // Estilo do valor de cada linha de informação do produto
+  darkLabel: {
+    color: '#f8f4e4', 
+  },
+  
   value: {
     fontSize: 14,
     color: '#424242',
     marginLeft: 5,
   },
-  // Estilo do contêiner que exibe os dias restantes até a expiração
+  darkValue: {
+    color: '#a5b3aa', 
+  },
+  
   remainingDaysContainer: {
     flex: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Estilo do número de dias restantes
+ 
   daysRemaining: {
     fontSize: 48,
     fontWeight: 'bold',
   },
-  // Estilo do rótulo de dias restantes (por exemplo, "Dia(s)")
+  
   daysLabel: {
     fontSize: 25,
     fontWeight: '600',

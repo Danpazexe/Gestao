@@ -1,47 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, TouchableOpacity, Dimensions, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Animated, Easing } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { Audio } from 'expo-av';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient'; // Para criar o efeito de rastro
+import { LinearGradient } from 'expo-linear-gradient';
 
-export default function BarcodeScannerScreen({ backButtonSize = 40 }) { 
-  const navigation = useNavigation(); 
+const BarcodeScannerScreen = ({ navigation }) => {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
-  const [animationValue] = useState(new Animated.Value(0)); // Animação para o movimento da linha
-  const [flash, setFlash] = useState(false);
   const [sound, setSound] = useState();
   const [modalVisible, setModalVisible] = useState(false);
   const [barcodeData, setBarcodeData] = useState('');
-
-  const { width, height } = Dimensions.get('window');
-  const scanAreaSize = width * 0.7; 
-  const scanAreaX = (width - scanAreaSize) / 2; 
-  const scanAreaY = (height - scanAreaSize) / 2; 
+  const [flash, setFlash] = useState(false);
+  const [animationValue] = useState(new Animated.Value(0)); // Animação para a linha de escaneamento
 
   useEffect(() => {
     (async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
-    startAnimation();
     loadSound();
+    startAnimation(); // Iniciar a animação assim que o componente monta
   }, []);
-
-  const startAnimation = () => {
-    animationValue.setValue(0);
-
-    Animated.loop(
-      Animated.timing(animationValue, {
-        toValue: 1,
-        duration: 1500, // Velocidade da animação
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-  };
 
   async function loadSound() {
     const { sound } = await Audio.Sound.createAsync(require('../../assets/Sound/Beep.mp3'));
@@ -50,86 +30,72 @@ export default function BarcodeScannerScreen({ backButtonSize = 40 }) {
 
   const playBeep = async () => {
     if (sound) {
-      await sound.replayAsync(); 
+      await sound.replayAsync();
     }
   };
 
-  const handleBarCodeScanned = async ({ bounds, data }) => {
-    const { origin } = bounds;
-    if (
-      origin.x >= scanAreaX &&
-      origin.x + bounds.size.width <= scanAreaX + scanAreaSize &&
-      origin.y >= scanAreaY &&
-      origin.y + bounds.size.height <= scanAreaY + scanAreaSize
-    ) {
+  const handleBarCodeScanned = async ({ data }) => {
+    if (!scanned) {
       setScanned(true);
       await playBeep();
       setBarcodeData(data);
-      setModalVisible(true); // Mostra o modal com as opções
+      setModalVisible(true);
     }
-  };
-
-  const toggleFlash = () => {
-    setFlash(!flash);
   };
 
   const confirmBarcode = () => {
     setModalVisible(false);
-    // Passando o código de barras para a AddProductScreen após confirmação
     navigation.navigate('AddProductScreen', { barcodeData });
   };
 
   const resetScanner = () => {
     setModalVisible(false);
-    setScanned(false); // Permite escanear novamente
+    setScanned(false);
   };
 
-  if (hasPermission === null) {
-    return <Text>Solicitando permissão para usar a câmera...</Text>;
-  }
-  if (hasPermission === false) {
-    return <Text>Sem acesso à câmera</Text>;
-  }
+  const toggleFlash = () => {
+    setFlash((prevFlash) => !prevFlash);
+  };
 
+  const startAnimation = () => {
+    animationValue.setValue(0);
+    Animated.loop(
+      Animated.timing(animationValue, {
+        toValue: 1,
+        duration: 4000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  };
+  
   const scanLineY = animationValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, scanAreaSize], 
+    outputRange: [180, 600], // Altura da linha de escaneamento
   });
 
   return (
     <View style={styles.container}>
       <BarCodeScanner
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-        style={StyleSheet.absoluteFillObject} 
+        onBarCodeScanned={handleBarCodeScanned}
+        style={StyleSheet.absoluteFillObject}
         torchMode={flash ? 'on' : 'off'}
-      />
-
-      <View style={styles.overlay}>
-        <View style={[styles.mask, { height: scanAreaY, width }]} />
-        <View style={{ flexDirection: 'row' }}>
-          <View style={[styles.mask, { width: scanAreaX, height: scanAreaSize }]} />
-          <View style={[styles.scanArea, { width: scanAreaSize, height: scanAreaSize }]}>
-            {/* Linha com efeito de rastro gradiente */}
-            <Animated.View
-              style={[
-                { transform: [{ translateY: scanLineY }] },
-                styles.scanLineContainer, 
-              ]}
-            >
-              <LinearGradient
-                colors={['rgba(255, 59, 48, 0)', '#FF3B30', 'rgba(255, 59, 48, 0)']}
-                style={styles.scanLine}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-            </Animated.View>
-          </View>
-          <View style={[styles.mask, { width: scanAreaX, height: scanAreaSize }]} />
+      >
+        <View style={styles.overlay}>
+          <Animated.View
+            style={[styles.scanLineContainer, { transform: [{ translateY: scanLineY }] }]}
+          >
+            <LinearGradient
+              colors={['rgba(255, 59, 48, 0)', '#FF3B30', '#FF3B30', 'rgba(255, 59, 48, 0)']} // Gradiente ajustado
+              style={styles.scanLine}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+          </Animated.View>
+          <Text style={styles.instructions}>Aponte a câmera para o código de barras</Text>
         </View>
-        <View style={[styles.mask, { height: scanAreaY, width }]} />
-      </View>
+      </BarCodeScanner>
 
-      {/* Modal para confirmar ou reescanear o código de barras */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -143,13 +109,13 @@ export default function BarcodeScannerScreen({ backButtonSize = 40 }) {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.okButton]}
-                onPress={confirmBarcode}  // Confirmação do código de barras
+                onPress={confirmBarcode}
               >
                 <Text style={styles.actionButtonText}>OK</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, styles.reescanButton]}
-                onPress={resetScanner}  // Reescanear
+                onPress={resetScanner}
               >
                 <Text style={styles.actionButtonText}>Reescanear</Text>
               </TouchableOpacity>
@@ -159,7 +125,7 @@ export default function BarcodeScannerScreen({ backButtonSize = 40 }) {
       </Modal>
 
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('AddProductScreen')}>
-        <MaterialIcons name="arrow-back" size={backButtonSize} color="#fff" /> 
+        <MaterialIcons name="arrow-back" size={36} color="#fff" />
       </TouchableOpacity>
 
       <View style={styles.controls}>
@@ -170,7 +136,7 @@ export default function BarcodeScannerScreen({ backButtonSize = 40 }) {
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -179,61 +145,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1c1c1e',
   },
+  camera: {
+    flex: 1,
+  },
   overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 50,
+  },
+  instructions: {
+    fontSize: 18,
+    color: '#fff',
+  },
+  scanLineContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  mask: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  },
-  scanArea: {
-    borderColor: '#007AFF',
-    borderWidth: 4,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)', 
-  },
-  scanLineContainer: {
-    width: '100%',
     height: 6,
     backgroundColor: 'transparent',
   },
   scanLine: {
-    width: '105%',
-    height: '105%',
-    borderRadius: 2,
-  },
-  controls: {
-    position: 'absolute',
-    bottom: 40,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     width: '100%',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    marginLeft: 10,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 1,
+    height: '100%',
+    borderRadius: 2,
   },
   modalBackground: {
     flex: 1,
@@ -263,6 +199,7 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    width: '100%',
   },
   actionButton: {
     paddingVertical: 12,
@@ -281,4 +218,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1,
+  },
+  controls: {
+    position: 'absolute',
+    bottom: 40,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
+
+export default BarcodeScannerScreen;

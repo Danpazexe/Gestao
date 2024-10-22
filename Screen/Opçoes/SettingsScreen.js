@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Switch, TouchableOpacity, Modal, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SettingsScreen = ({ isDarkMode, setIsDarkMode, navigation }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
+
+  useEffect(() => {
+    // Configurando o título da tela para "Configurações"
+    navigation.setOptions({
+      headerShown: true,
+      headerStyle: {
+        backgroundColor: isDarkMode ? '#181818' : '#6cb6a5', // Usando a tonalidade para o fundo
+      },
+      headerTintColor: '#FFFFFF',
+      headerTitle: 'Configurações',  // Título atualizado
+    });
+  }, [navigation, isDarkMode]); // Atualiza sempre que o tema escuro mudar
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -23,16 +35,6 @@ const SettingsScreen = ({ isDarkMode, setIsDarkMode, navigation }) => {
       console.error('Erro ao redefinir dados', e);
     }
   };
-
-  // Configurando o título da tela para "Configurações"
-  navigation.setOptions({
-    headerShown: true,
-    headerStyle: {
-      backgroundColor: isDarkMode ? '#181818' : '#6cb6a5', // Usando a tonalidade para o fundo
-    },
-    headerTintColor: '#FFFFFF',
-    headerTitle: 'Configurações',  // Título atualizado
-  });
 
   const handleImportExportData = () => {
     Alert.alert('Importar/Exportar', 'Função de importação/exportação de dados em desenvolvimento.');
@@ -118,7 +120,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
   },
   darkContainer: {
-    backgroundColor: '#252525',  // Cor mais clara para contraste no modo escuro
+    backgroundColor: '#252525', 
   },
   lightContainer: {
     backgroundColor: '#FFF',

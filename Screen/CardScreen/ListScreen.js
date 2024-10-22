@@ -39,10 +39,10 @@ const useProducts = () => {
   return { products, setProducts, loadProducts, saveProducts, loading };
 };
 
-const ListScreen = ({ route, navigation }) => {
+const ListScreen = ({ route, navigation, isDarkMode }) => {
   const { products, setProducts, loadProducts, saveProducts, loading } = useProducts();
   const [searchText, setSearchText] = useState('');
-  const [filterType, setFilterType] = useState('name');
+  const [filterType, setFilterType] = useState('nome');
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
@@ -80,12 +80,12 @@ const ListScreen = ({ route, navigation }) => {
     navigation.setOptions({
       headerShown: true,
       headerStyle: {
-        backgroundColor: '#2e97b7',
+        backgroundColor: isDarkMode ? '#2e2e2e' : '#2e97b7',
       },
       headerTintColor: '#FFFFFF',
       headerTitle: 'Lista de Produtos',
     });
-  }, [navigation]);
+  }, [navigation, isDarkMode]);
 
   const handleDeleteProduct = (product) => {
     setProductToDelete(product); 
@@ -98,7 +98,7 @@ const ListScreen = ({ route, navigation }) => {
       setProducts(updatedProducts);
       await saveProducts(updatedProducts);
       setAlertVisible(false);
-      Alert.alert('Sucesso', 'Produto excluído com sucesso!'); // Mensagem de confirmação
+      Alert.alert('Sucesso', 'Produto excluído com sucesso!'); 
     }
   };
 
@@ -117,9 +117,9 @@ const ListScreen = ({ route, navigation }) => {
     return products
       .filter((product) => {
         switch (filterType) {
-          case 'name':
+          case 'nome':
             return product.name?.toLowerCase().includes(normalizedSearchText);
-          case 'internalCode':
+          case 'Codigo Interno':
             return product.internalCode?.toLowerCase().includes(normalizedSearchText);
           case 'ean':
             return product.ean?.toLowerCase().includes(normalizedSearchText);
@@ -137,13 +137,14 @@ const ListScreen = ({ route, navigation }) => {
     const daysRemaining = calculateDaysRemaining(item.expirationDate);
 
     return (
-      <View style={styles.productItem}>
+      <View style={[styles.productItem, isDarkMode && styles.darkProductItem]}>
         <ProductItem
           product={{
             ...item,
             expirationDate: new Date(item.expirationDate).toLocaleDateString(),
             daysRemaining,
           }}
+          isDarkMode={isDarkMode} // Passando a propriedade para o ProductItem
         />
         <TouchableOpacity onPress={() => handleDeleteProduct(item)} style={styles.deleteButton}>
           <LottieView
@@ -165,18 +166,18 @@ const ListScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDarkMode && styles.darkBackground]}>
       <View style={styles.searchContainer}>
-        <TouchableOpacity style={styles.filterButton} onPress={toggleFilter}>
+        <TouchableOpacity style={[styles.filterButton, isDarkMode && styles.darkFilterButton]} onPress={toggleFilter}>
           <Icon name="filter" size={20} color="#FFFFFF" />
           <Text style={styles.filterText}>{filterType.charAt(0).toUpperCase() + filterType.slice(1)}</Text>
         </TouchableOpacity>
         {isFilterVisible && (
-          <View style={styles.filterOptions}>
-            <TouchableOpacity onPress={() => setSelectedFilter('name')}>
+          <View style={[styles.filterOptions, isDarkMode && styles.darkFilterOptions]}>
+            <TouchableOpacity onPress={() => setSelectedFilter('nome')}>
               <Text style={[styles.optionText, styles.lastOptionText]}>Nome</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setSelectedFilter('internalCode')}>
+            <TouchableOpacity onPress={() => setSelectedFilter('Codigo Interno')}>
               <Text style={styles.optionText}>Código Interno</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setSelectedFilter('ean')}>
@@ -185,8 +186,9 @@ const ListScreen = ({ route, navigation }) => {
           </View>
         )}
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, isDarkMode && styles.darkSearchInput]}
           placeholder={`Pesquisar produto por ${filterType}`}
+          placeholderTextColor="#888"
           onChangeText={debouncedSearch}
         />
       </View>
@@ -217,8 +219,11 @@ const ListScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 18,
     backgroundColor: '#F2F2F2',
+  },
+  darkBackground: {
+    backgroundColor: '#1e1e1e',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -233,16 +238,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginRight: 10,
   },
+  darkFilterButton: {
+    backgroundColor: '#3b3b3b',
+  },
   filterText: {
     color: '#FFFFFF',
-    marginLeft: 5,
+    marginLeft: 2,
     fontSize: 16,
   },
   filterOptions: {
     position: 'absolute',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#2e97b7',
+    borderColor: '#2b879e',
     borderRadius: 10,
     padding: 10,
     zIndex: 1,
@@ -252,24 +260,30 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  darkFilterOptions: {
+    backgroundColor: '#2e2e2e',
+  },
   optionText: {
     paddingVertical: 10,
     fontSize: 16,
-    color: '#2e97b7',
+    color: '#2b879e',
   },
   searchInput: {
     flex: 1,
     height: 50,
-    borderColor: '#2e97b7',
+    borderColor: '#2b879e',
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 15,
     backgroundColor: '#FFFFFF',
     color: '#333333',
   },
+  darkSearchInput: {
+    backgroundColor: '#3b3b3b',
+    borderColor: '#666',
+    color: '#FFFFFF',
+  },
   productItem: {
-    padding: 10,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     marginBottom: 15,
     elevation: 2, 
@@ -277,6 +291,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     position: 'relative', 
   },
+  
   deleteButton: {
     position: 'absolute', 
     top: 8, 

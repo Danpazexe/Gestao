@@ -32,7 +32,7 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
     navigation.setOptions({
       headerShown: true,
       headerStyle: {
-        backgroundColor: isDarkMode ? '#3b4f43' : '#5d7e62', // Usando a tonalidade para o fundo
+        backgroundColor: isDarkMode ? '#3b4f43' : '#5d7e62', 
       },
       headerTintColor: '#FFFFFF',
       headerTitle: 'Cadastro de Produtos',
@@ -120,10 +120,10 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
         onChangeText={setProductName}
         style={[
           styles.input,
-          { color: isDarkMode ? '#E0E0E0' : '#000000' }, // Texto neutro
+          { color: isDarkMode ? '#E0E0E0' : '#000000' }, 
           isDarkMode ? styles.darkInput : styles.lightInput,
         ]}
-        placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'} // Placeholder neutro no modo claro e escuro
+        placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'} 
       />
 
       {/* Lote */}
@@ -226,10 +226,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   lightBackground: {
-    backgroundColor: '#F0F5F2', 
+    backgroundColor: '#F9F9F9', 
   },
   darkBackground: {
-    backgroundColor: '#121212', 
+    backgroundColor: '#181818', 
   },
   titleContainer: {
     marginBottom: 20,
@@ -242,19 +242,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     fontSize: 16,
     borderWidth: 1.5,
-    borderColor: '#5d7e62', // Usando a cor solicitada para a borda
+    borderColor: '#5d7e62', 
   },
   lightInput: {
     backgroundColor: '#FFFFFF',
   },
   darkInput: {
-    backgroundColor: '#2E3D34', // Tom mais neutro e escuro
+    backgroundColor: '#2E3D34', 
   },
   lightText: {
     color: '#000000',
   },
   darkText: {
-    color: '#E0E0E0', // Texto neutro claro no modo escuro
+    color: '#E0E0E0', 
   },
   label: {
     marginBottom: 3,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     fontSize: 16,
     borderWidth: 1.5,
-    borderColor: '#5d7e62', // Usando a cor solicitada
+    borderColor: '#5d7e62', 
   },
   scanButton: {
     backgroundColor: '#5d7e62',
