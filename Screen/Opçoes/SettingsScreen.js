@@ -11,12 +11,12 @@ const SettingsScreen = ({ isDarkMode, setIsDarkMode, navigation }) => {
     navigation.setOptions({
       headerShown: true,
       headerStyle: {
-        backgroundColor: isDarkMode ? '#181818' : '#6cb6a5', // Usando a tonalidade para o fundo
+        backgroundColor: isDarkMode ? '#181818' : '#6cb6a5', 
       },
       headerTintColor: '#FFFFFF',
-      headerTitle: 'Configurações',  // Título atualizado
+      headerTitle: 'Configurações',  
     });
-  }, [navigation, isDarkMode]); // Atualiza sempre que o tema escuro mudar
+  }, [navigation, isDarkMode]); 
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -34,10 +34,6 @@ const SettingsScreen = ({ isDarkMode, setIsDarkMode, navigation }) => {
     } catch (e) {
       console.error('Erro ao redefinir dados', e);
     }
-  };
-
-  const handleImportExportData = () => {
-    Alert.alert('Importar/Exportar', 'Função de importação/exportação de dados em desenvolvimento.');
   };
 
   return (
@@ -68,11 +64,6 @@ const SettingsScreen = ({ isDarkMode, setIsDarkMode, navigation }) => {
           style={styles.switch}
         />
       </View>
-
-      {/* Botão de Importar/Exportar Dados */}
-      <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={handleImportExportData}>
-        <Text style={styles.buttonText}>Importar/Exportar Dados</Text>
-      </TouchableOpacity>
 
       {/* Botão de Redefinir Dados */}
       <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={() => setIsModalVisible(true)}>
@@ -132,8 +123,7 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     padding: 10,
     borderRadius: 10,
-    elevation: 2,  // Sombra no Android
-    shadowColor: '#000',  // Sombra no iOS
+    elevation: 2,  
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,

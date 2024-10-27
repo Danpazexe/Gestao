@@ -12,56 +12,64 @@ import HomeScreen from './Screen/Menu/HomeScreen';
 import AddProductScreen from './Screen/Additem/AddProductScreen';
 import BarcodeScannerScreen from './Screen/Additem/BarcodeScannerScreen';
 import SettingsScreen from './Screen/Opçoes/SettingsScreen';
+import DashboardScreen from './Screen/Dashboard/DashboardScreen';
+import ExcelScreen from './Screen/Excel/ExcelScreen';
 
 const Stack = createStackNavigator();
 
+// Componente StatusBar customizado
+const CustomStatusBar = ({ isDarkMode }) => (
+  <StatusBar
+    translucent
+    backgroundColor="transparent"
+    animated
+    barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+    hidden={false} // Define visibilidade conforme necessário
+  />
+);
+
 export default function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false); // Estado global para tema
-  const [colorScheme, setColorScheme] = useState(Appearance.getColorScheme());
+  const [isDarkMode, setIsDarkMode] = useState(Appearance.getColorScheme() === 'dark');
 
   useEffect(() => {
-    const configureNavigationBar = async () => {
-      // Torna a barra de navegação transparente
+    const updateNavigationBar = async () => {
       await NavigationBar.setBackgroundColorAsync('transparent');
-
-      // Define o estilo dos botões da barra de navegação
-      if (colorScheme === 'dark') {
-        await NavigationBar.setButtonStyleAsync('light');
-      } else {
-        await NavigationBar.setButtonStyleAsync('dark');
-      }
+      await NavigationBar.setButtonStyleAsync(isDarkMode ? 'light' : 'dark');
     };
+    updateNavigationBar();
 
-    configureNavigationBar();
-    
-    // Listener para mudanças no tema do dispositivo
     const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-      setColorScheme(colorScheme);
       setIsDarkMode(colorScheme === 'dark');
     });
 
-    return () => subscription?.remove(); // Remove listener ao desmontar componente
-  }, [colorScheme]);
+    return () => subscription?.remove();
+  }, [isDarkMode]);
 
   return (
     <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
-      <StatusBar style={isDarkMode ? "light" : "dark"} />
+      <CustomStatusBar isDarkMode={isDarkMode} />
       <Stack.Navigator initialRouteName="EntryScreen">
         <Stack.Screen name="EntryScreen">
-          {props => <EntryScreen {...props} isDarkMode={isDarkMode} />} 
+          {props => <EntryScreen {...props} isDarkMode={isDarkMode} />}
         </Stack.Screen>
         <Stack.Screen name="HomeScreen">
-          {props => <HomeScreen {...props} isDarkMode={isDarkMode} />} 
+          {props => <HomeScreen {...props} isDarkMode={isDarkMode} />}
         </Stack.Screen>
         <Stack.Screen name="ListScreen">
-          {props => <ListScreen {...props} isDarkMode={isDarkMode} />} 
+          {props => <ListScreen {...props} isDarkMode={isDarkMode} />}
         </Stack.Screen>
         <Stack.Screen name="AddProductScreen">
-          {props => <AddProductScreen {...props} isDarkMode={isDarkMode} />} 
+          {props => <AddProductScreen {...props} isDarkMode={isDarkMode} />}
+        </Stack.Screen>
+        <Stack.Screen name="DashboardScreen">
+          {props => <DashboardScreen {...props} isDarkMode={isDarkMode} />}
+        </Stack.Screen>
+        <Stack.Screen name="ExcelScreen">
+          {props => <ExcelScreen {...props} isDarkMode={isDarkMode} />}
         </Stack.Screen>
         <Stack.Screen name="BarcodeScannerScreen" component={BarcodeScannerScreen} options={{ headerShown: false }} />
         <Stack.Screen name="SettingsScreen">
-          {props => <SettingsScreen {...props} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} 
+          {props => <SettingsScreen {...props} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />}
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>

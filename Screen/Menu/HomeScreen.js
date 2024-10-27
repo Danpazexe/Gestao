@@ -79,6 +79,21 @@ const HomeScreen = ({ isDarkMode }) => {
 
         {/* Card 4: Configurações */}
         <TouchableOpacity
+          style={[styles.card, { backgroundColor: isDarkMode ? "#012677" : "#294380" }]}
+          onPress={() => handleNavigation("ExcelScreen")}
+        >
+          <LottieView
+            source={require("../../assets/GifMenu/Excel.json")} 
+            style={styles.icon}
+            autoPlay
+            loop
+            speed={0.3} 
+          />
+          <Text style={styles.cardTitle}>Export/Import</Text>
+        </TouchableOpacity>
+
+        {/* Card 5: Configurações */}
+        <TouchableOpacity
           style={[styles.card, { backgroundColor: isDarkMode ? "#3A7F7F" : "#6cb6a5" }]}
           onPress={() => handleNavigation("SettingsScreen")}
         >
@@ -92,7 +107,7 @@ const HomeScreen = ({ isDarkMode }) => {
           <Text style={styles.cardTitle}>Configurações</Text>
         </TouchableOpacity>
 
-        {/* Card 5: Em Desenvolvimento */}
+        {/* Card 6: Em Desenvolvimento */}
         <TouchableOpacity style={[styles.card, { backgroundColor: isDarkMode ? "#955239" : "#be5e46" }]}>
           <LottieView
             source={require("../../assets/GifMenu/Build.json")} 
