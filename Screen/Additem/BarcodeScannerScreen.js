@@ -1,39 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Animated, Easing } from 'react-native';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { Camera } from 'expo-camera';
 import { Audio } from 'expo-av';
-import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { BarCodeScanner } from 'expo-barcode-scanner';
 
 const BarcodeScannerScreen = ({ navigation }) => {
-  const [hasPermission, setHasPermission] = useState(null);
-  const [scanned, setScanned] = useState(false);
-  const [sound, setSound] = useState();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [barcodeData, setBarcodeData] = useState('');
-  const [flash, setFlash] = useState(false);
-  const [animationValue] = useState(new Animated.Value(0)); // Animação para a linha de escaneamento
+  const [hasPermission, setHasPermission] = useState(null); // Permissão de câmera
+  const [scanned, setScanned] = useState(false); // Controle de escaneamento
+  const [modalVisible, setModalVisible] = useState(false); // Visibilidade do modal
+  const [sound, setSound] = useState(); // Som do beep
+  const [barcodeData, setBarcodeData] = useState(''); // Dados do código de barras
 
+  // Solicita permissão de câmera e carrega o som
   useEffect(() => {
-    (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
+    const requestPermissions = async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === 'granted');
-    })();
-    loadSound();
-    startAnimation(); // Iniciar a animação assim que o componente monta
+      if (status === 'granted') await loadSound();
+    };
+    requestPermissions();
   }, []);
 
-  async function loadSound() {
-    const { sound } = await Audio.Sound.createAsync(require('../../assets/Sound/Beep.mp3'));
-    setSound(sound);
-  }
-
-  const playBeep = async () => {
-    if (sound) {
-      await sound.replayAsync();
-    }
-  };
-
+  // Manipula o escaneamento do código de barras
   const handleBarCodeScanned = async ({ data }) => {
     if (!scanned) {
       setScanned(true);
@@ -43,64 +31,50 @@ const BarcodeScannerScreen = ({ navigation }) => {
     }
   };
 
+  // Confirma o código e navega para a tela de adicionar produto
   const confirmBarcode = () => {
     setModalVisible(false);
     navigation.navigate('AddProductScreen', { barcodeData });
   };
 
+  // Reseta o scanner para uma nova leitura
   const resetScanner = () => {
     setModalVisible(false);
     setScanned(false);
   };
 
-  const toggleFlash = () => {
-    setFlash((prevFlash) => !prevFlash);
+  // Carrega o som do beep
+  const loadSound = async () => {
+    const { sound } = await Audio.Sound.createAsync(require('../../assets/Sound/Beep.mp3'));
+    setSound(sound);
   };
 
-  const startAnimation = () => {
-    animationValue.setValue(0);
-    Animated.loop(
-      Animated.timing(animationValue, {
-        toValue: 1,
-        duration: 4000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
+  // Reproduz o som do beep
+  const playBeep = async () => {
+    if (sound) {
+      await sound.replayAsync();
+    }
   };
-  
-  const scanLineY = animationValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [180, 600], // Altura da linha de escaneamento
-  });
+
+  // Verifica permissão da câmera e exibe mensagens
+  if (hasPermission === null) {
+    return <Text style={styles.permissionText}>Solicitando permissão para usar a câmera...</Text>;
+  }
+  if (hasPermission === false) {
+    return <Text style={styles.permissionText}>Permissão para acessar a câmera foi negada.</Text>;
+  }
 
   return (
     <View style={styles.container}>
       <BarCodeScanner
-        onBarCodeScanned={handleBarCodeScanned}
+        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
         style={StyleSheet.absoluteFillObject}
-        torchMode={flash ? 'on' : 'off'}
-      >
-        <View style={styles.overlay}>
-          <Animated.View
-            style={[styles.scanLineContainer, { transform: [{ translateY: scanLineY }] }]}
-          >
-            <LinearGradient
-              colors={['rgba(255, 59, 48, 0)', '#FF3B30', '#FF3B30', 'rgba(255, 59, 48, 0)']} // Gradiente ajustado
-              style={styles.scanLine}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-          </Animated.View>
-          <Text style={styles.instructions}>Aponte a câmera para o código de barras</Text>
-        </View>
-      </BarCodeScanner>
-
+      />
       <Modal
         animationType="fade"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={resetScanner}
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
@@ -123,17 +97,6 @@ const BarcodeScannerScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('AddProductScreen')}>
-        <MaterialIcons name="arrow-back" size={36} color="#fff" />
-      </TouchableOpacity>
-
-      <View style={styles.controls}>
-        <TouchableOpacity style={styles.button} onPress={toggleFlash}>
-          <MaterialIcons name={flash ? "flash-off" : "flash-on"} size={24} color="white" />
-          <Text style={styles.buttonText}>{flash ? 'Desligar Lanterna' : 'Ligar Lanterna'}</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -142,34 +105,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1c1c1e',
-  },
-  camera: {
-    flex: 1,
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 50,
-  },
-  instructions: {
-    fontSize: 18,
-    color: '#fff',
-  },
-  scanLineContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 6,
-    backgroundColor: 'transparent',
-  },
-  scanLine: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 2,
+    backgroundColor: '#1A1A1A',
   },
   modalBackground: {
     flex: 1,
@@ -178,22 +114,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContainer: {
-    width: '80%',
-    backgroundColor: '#2c2c2e',
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    padding: 30,
+    borderRadius: 20,
+    width: '90%',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 10,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 24,
+    fontWeight: '600',
     marginBottom: 10,
+    color: '#4A90E2',
   },
   modalData: {
     fontSize: 18,
-    color: '#fff',
     marginBottom: 20,
+    color: '#555',
     textAlign: 'center',
   },
   modalButtons: {
@@ -202,47 +143,26 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   actionButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    marginHorizontal: 10,
+    padding: 12,
+    borderRadius: 10,
+    marginHorizontal: 5,
+    flex: 1,
+    marginVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   okButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#4CAF50',
   },
   reescanButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#FFC107',
   },
   actionButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 1,
-  },
-  controls: {
-    position: 'absolute',
-    bottom: 40,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    marginLeft: 10,
-    fontSize: 16,
+    color: '#FFFFFF',
+    textAlign: 'center',
     fontWeight: 'bold',
   },
 });

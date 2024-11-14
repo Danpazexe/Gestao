@@ -7,15 +7,15 @@ const ProductItem = ({ product, isDarkMode }) => {
   // Função para determinar o texto e cor de acordo com os dias restantes até a validade
   const getDaysToExpirationText = (days) => {
     if (days === 0) {
-      return { number: 'Hoje', label: '', color: '#F44336' }; // Vermelho
+      return { number: 'Hoje', label: '', color: '#F44336' }; 
     } else if (days > 0 && days <= 15) {
-      return { number: days.toString(), label: 'Dia(s)', color: '#E91E63' }; // Vermelho 
+      return { number: days.toString(), label: 'Dia(s)', color: '#E91E63' };  
     } else if (days > 15 && days <= 30) {
-      return { number: days.toString(), label: 'Dia(s)', color: '#FFC107' }; // Amarelo
+      return { number: days.toString(), label: 'Dia(s)', color: '#FFC107' }; 
     } else if (days > 30) {
-      return { number: days.toString(), label: 'Dia(s)', color: '#4CAF50' }; // Verde
+      return { number: days.toString(), label: 'Dia(s)', color: '#4CAF50' }; 
     } else {
-      return { number: '', label: 'Expirado', color: '#B0BEC5' }; // Cinza claro
+      return { number: '', label: 'Expirado', color: '#B0BEC5' }; 
     }
   };
 

@@ -33,8 +33,8 @@ const AlertDialog = ({
                             <TouchableOpacity 
                                 style={[styles.button, styles.cancelButton]} 
                                 onPress={() => {
-                                    if (onCancel) onCancel(); // Chama onCancel se definido
-                                    if (onDismiss) onDismiss(); // Fecha o diálogo
+                                    if (onCancel) onCancel(); 
+                                    if (onDismiss) onDismiss(); 
                                 }}
                                 accessibilityLabel={cancelText}
                             >
@@ -45,8 +45,8 @@ const AlertDialog = ({
                             <TouchableOpacity 
                                 style={[styles.button, styles.confirmButton]} 
                                 onPress={() => {
-                                    if (onConfirm) onConfirm(); // Chama onConfirm se definido
-                                    if (onDismiss) onDismiss(); // Fecha o diálogo
+                                    if (onConfirm) onConfirm(); 
+                                    if (onDismiss) onDismiss(); 
                                 }}
                                 accessibilityLabel={confirmText}
                             >
@@ -60,7 +60,7 @@ const AlertDialog = ({
                         <TouchableOpacity 
                             style={styles.dismissButton} 
                             onPress={() => {
-                                if (onDismiss) onDismiss(); // Chama onDismiss se definido
+                                if (onDismiss) onDismiss(); 
                             }}
                             accessibilityLabel={dismissText}
                         >
@@ -119,10 +119,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelButton: {
-        backgroundColor: '#f44336', // Vermelho claro
+        backgroundColor: '#f44336', 
     },
     confirmButton: {
-        backgroundColor: '#4CAF50', // Verde
+        backgroundColor: '#4CAF50', 
     },
     buttonText: {
         color: '#FFFFFF',

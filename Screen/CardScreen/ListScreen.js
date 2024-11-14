@@ -3,9 +3,8 @@ import { View, FlatList, StyleSheet, Alert, TextInput, ActivityIndicator, Toucha
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductItem from '../Components/ProductItem';
 import debounce from 'lodash.debounce';
-import LottieView from 'lottie-react-native'; 
 import Icon from 'react-native-vector-icons/FontAwesome';
-import AlertDialog from '../Components/AlertDialog'; 
+import AlertDialog from '../Components/AlertDialog';
 
 // Hook personalizado para gerenciar produtos
 const useProducts = () => {
@@ -17,7 +16,7 @@ const useProducts = () => {
     try {
       const storedProducts = await AsyncStorage.getItem('products');
       if (storedProducts) {
-        setProducts(JSON.parse(storedProducts)); 
+        setProducts(JSON.parse(storedProducts));
       }
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
@@ -88,18 +87,22 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
   }, [navigation, isDarkMode]);
 
   const handleDeleteProduct = (product) => {
-    setProductToDelete(product); 
-    setAlertVisible(true); 
+    setProductToDelete(product);
+    setAlertVisible(true);
   };
 
   const confirmDeleteProduct = async () => {
     if (productToDelete) {
-      const updatedProducts = products.filter(product => product.id !== productToDelete.id); 
+      const updatedProducts = products.filter(product => product.id !== productToDelete.id);
       setProducts(updatedProducts);
       await saveProducts(updatedProducts);
       setAlertVisible(false);
-      Alert.alert('Sucesso', 'Produto excluído com sucesso!'); 
+      Alert.alert('Sucesso', 'Produto excluído com sucesso!');
     }
+  };
+
+  const handleEditProduct = (product) => {
+    navigation.navigate('AddProductScreen', { product });
   };
 
   const calculateDaysRemaining = (expirationDate) => {
@@ -111,7 +114,6 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
     return Math.max(Math.floor(timeDiff / (1000 * 3600 * 24)), 0);
   };
 
-  // Filtra e ordena os produtos usando useMemo para otimizar desempenho
   const filterAndSortProducts = useMemo(() => {
     const normalizedSearchText = searchText.toLowerCase();
     return products
@@ -130,7 +132,6 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
       .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate));
   }, [products, searchText, filterType]);
 
-  // Debounce para evitar chamadas excessivas
   const debouncedSearch = debounce((text) => setSearchText(text), 300);
 
   const renderProductItem = ({ item }) => {
@@ -144,14 +145,16 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
             expirationDate: new Date(item.expirationDate).toLocaleDateString(),
             daysRemaining,
           }}
-          isDarkMode={isDarkMode} // Passando a propriedade para o ProductItem
+          isDarkMode={isDarkMode}
         />
-        <TouchableOpacity onPress={() => handleDeleteProduct(item)} style={styles.deleteButton}>
-          <LottieView
-            source={require('../../assets/GifAdd/Lixeira.json')} 
-            style={styles.lottieIcon}
-          />
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity onPress={() => handleEditProduct(item)} style={styles.editButton}>
+            <Icon name="edit" size={20} color="#2e97b7" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleDeleteProduct(item)} style={styles.deleteButton}>
+            <Icon name="trash" size={20} color="#FF6347" />
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -202,15 +205,13 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
-      
-      {/* Dialogo de Confirmação de Exclusão */}
-      <AlertDialog 
+      <AlertDialog
         visible={alertVisible}
         title="Confirmar Exclusão"
         message="Você tem certeza que deseja excluir este produto?"
-        onConfirm={confirmDeleteProduct} 
+        onConfirm={confirmDeleteProduct}
         onCancel={() => setAlertVisible(false)}
-        onDismiss={() => setAlertVisible(false)} 
+        onDismiss={() => setAlertVisible(false)}
       />
     </View>
   );
@@ -246,64 +247,65 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     fontSize: 16,
   },
-  filterOptions: {
-    position: 'absolute',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#2b879e',
-    borderRadius: 10,
-    padding: 10,
-    zIndex: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  darkFilterOptions: {
-    backgroundColor: '#2e2e2e',
-  },
-  optionText: {
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#2b879e',
-  },
   searchInput: {
     flex: 1,
-    height: 50,
-    borderColor: '#2b879e',
     borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
     borderRadius: 10,
-    paddingHorizontal: 15,
-    backgroundColor: '#FFFFFF',
-    color: '#333333',
+    backgroundColor: '#fff',
   },
   darkSearchInput: {
-    backgroundColor: '#3b3b3b',
-    borderColor: '#666',
-    color: '#FFFFFF',
-  },
-  productItem: {
-    borderRadius: 16,
-    marginBottom: 15,
-    elevation: 2, 
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    position: 'relative', 
-  },
-  
-  deleteButton: {
-    position: 'absolute', 
-    top: 8, 
-    right: 8, 
-    padding: 8, 
-  },
-  lottieIcon: {
-    width: 26,
-    height: 26,
+    backgroundColor: '#444',
+    color: '#fff',
   },
   loadingIndicator: {
     marginTop: 20,
+  },
+  productItem: {
+    flexDirection: 'row',
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+    position: 'relative', 
+  },
+  darkProductItem: {
+    backgroundColor: '#333',
+  },
+  actionButtons: {
+    position: 'absolute',
+    right: 20,
+    top: 26,
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  editButton: {
+    marginBottom: 100,
+  },
+  deleteButton: {
+    marginBottom: 50,
+  },
+  filterOptions: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    padding: 10,
+    elevation: 5,
+  },
+  darkFilterOptions: {
+    backgroundColor: '#333',
+  },
+  optionText: {
+    padding: 10,
+    fontSize: 16,
+  },
+  lastOptionText: {
+    borderBottomWidth: 1,
   },
 });
 

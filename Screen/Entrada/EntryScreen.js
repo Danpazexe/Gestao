@@ -43,8 +43,8 @@ const DotSpinner = () => {
             style={[
               styles.dotSpinnerDotBefore,
               {
-                opacity: value, // Controla a opacidade da animação
-                transform: [{ scale: value }], // Controla o escalonamento do ponto
+                opacity: value, 
+                transform: [{ scale: value }], 
               },
             ]}
           />
