@@ -18,7 +18,7 @@ const DotSpinner = () => {
           delay: index * 55, // Atraso para cada ponto
         }),
         Animated.timing(value, {
-          toValue: 0, // Retorna o valor para 0 após atingir 1
+          toValue: 0, 
           duration: 1000,
           useNativeDriver: true,
         }),
@@ -61,10 +61,10 @@ const EntryScreen = () => {
     // Esconder o cabeçalho da tela de navegação
     navigation.setOptions({ headerShown: false });
 
-    // Navegar para a HomeScreen após 5 segundos
+    // Navegar para a loginScreen
     const timer = setTimeout(() => {
-      navigation.navigate('HomeScreen');
-    }, 6000);
+      navigation.navigate('LoginScreen');
+    }, 3000);
 
     // Limpar o timer ao desmontar o componente
     return () => clearTimeout(timer);

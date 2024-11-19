@@ -14,6 +14,9 @@ import BarcodeScannerScreen from './Screen/Additem/BarcodeScannerScreen';
 import SettingsScreen from './Screen/Opçoes/SettingsScreen';
 import DashboardScreen from './Screen/Dashboard/DashboardScreen';
 import ExcelScreen from './Screen/Excel/ExcelScreen';
+import LoginScreen from './Screen/Entrada/LoginScreen';
+import RegisterScreen from './Screen/Registro/RegisterScreen';
+
 
 const Stack = createStackNavigator();
 
@@ -67,11 +70,18 @@ export default function App() {
         <Stack.Screen name="ExcelScreen">
           {props => <ExcelScreen {...props} isDarkMode={isDarkMode} />}
         </Stack.Screen>
+        <Stack.Screen name="LoginScreen" options={{ headerShown: false }}>
+          {props => <LoginScreen {...props} isDarkMode={isDarkMode} />}
+        </Stack.Screen>
+        <Stack.Screen name="RegisterScreen"options={{ headerShown: false }}>
+          {props => <RegisterScreen {...props} isDarkMode={isDarkMode} />}
+        </Stack.Screen>
         <Stack.Screen name="BarcodeScannerScreen" component={BarcodeScannerScreen} options={{ headerShown: false }} />
         <Stack.Screen name="SettingsScreen">
           {props => <SettingsScreen {...props} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />}
         </Stack.Screen>
       </Stack.Navigator>
+
     </NavigationContainer>
   );
 }

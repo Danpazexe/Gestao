@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
     alignItems: 'center',
-    position: 'relative', 
+    position: 'relative',
   },
   darkProductItem: {
     backgroundColor: '#333',
