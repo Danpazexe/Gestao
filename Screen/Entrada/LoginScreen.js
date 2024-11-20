@@ -8,51 +8,77 @@ import {
   Image,
   ScrollView,
   ImageBackground,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
 const LoginScreen = ({ navigation }) => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [usernameError, setUsernameError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [secureText, setSecureText] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleLogin = async () => {
-    // Limpa os erros anteriores
-    setUsernameError("");
+    console.log("Iniciando login...");
+
+    if (!email.trim()) {
+      setEmailError("Por favor, insira seu email.");
+      console.log("Erro: Email não informado");
+      return;
+    }
+    if (!validateEmail(email.trim())) {
+      setEmailError("Por favor, insira um email válido.");
+      console.log("Erro: Email inválido");
+      return;
+    }
+    if (!password.trim()) {
+      setPasswordError("Por favor, insira a senha.");
+      console.log("Erro: Senha não informada");
+      return;
+    }
+    setEmailError("");
     setPasswordError("");
 
-    // Validações simples para campos vazios
-    if (!username) {
-      setUsernameError("Por favor, insira o nome de usuário.");
-    }
-    if (!password) {
-      setPasswordError("Por favor, insira a senha.");
-    }
+    setIsLoading(true);
+    console.log("Enviando requisição para o servidor...");
 
-    // Realizar a verificação usando AsyncStorage
-    if (username && password) {
-      try {
-        // Buscando usuário e senha armazenados no AsyncStorage
-        const storedUsername = await AsyncStorage.getItem("username");
-        const storedPassword = await AsyncStorage.getItem("password");
-
-        // Verificando se o usuário e senha estão corretos
-        if (username === storedUsername) {
-          if (password === storedPassword) {
-            navigation.navigate("HomeScreen");
-          } else {
-            setPasswordError("Senha inválida!");
-          }
-        } else {
-          setUsernameError("Usuário não encontrado!");
+    try {
+      const response = await axios.post(
+        "https://api.gestao.aviait.com.br/sessions",
+        {
+          email: email.trim(),
+          password: password.trim(),
+        },
+        {
+          headers: { "Content-Type": "application/json" },
         }
-      } catch (error) {
-        console.error("Erro ao verificar credenciais:", error);
-        setUsernameError("Erro ao verificar credenciais.");
+      );
+      console.log("Resposta da API:", response);
+
+      if (response.status === 200 && response.data.message === "User authenticated successfully") {
+        console.log("Login bem-sucedido.");
+        navigation.navigate("HomeScreen");
+      } else {
+        Alert.alert(
+          "Erro",
+          "Login incorreto. Por favor, verifique suas credenciais e tente novamente."
+        );
+        console.log("Erro: Credenciais incorretas");
       }
+    } catch (error) {
+      console.error("Erro na requisição:", error);
+      Alert.alert("Erro", "Não foi possível fazer login. Tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -62,7 +88,6 @@ const LoginScreen = ({ navigation }) => {
       style={styles.container}
       resizeMode="cover"
     >
-      {/* Parte superior decorativa */}
       <View style={styles.topSection}>
         <View style={styles.iconContainer}>
           <Image
@@ -72,19 +97,21 @@ const LoginScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Formulário de login */}
       <ScrollView contentContainerStyle={styles.formContainer}>
         <Text style={styles.title}>Login</Text>
 
         <TextInput
-          style={[styles.input, usernameError && styles.inputError]}
-          placeholder="Usuário"
+          style={[styles.input, emailError && styles.inputError]}
+          placeholder="Email"
           placeholderTextColor="#A0A0A0"
-          value={username}
-          onChangeText={setUsername}
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (emailError) setEmailError("");
+          }}
         />
-        {usernameError ? (
-          <Text style={styles.errorText}>{usernameError}</Text>
+        {emailError ? (
+          <Text style={styles.errorText}>{emailError}</Text>
         ) : null}
 
         <View style={styles.passwordContainer}>
@@ -94,7 +121,10 @@ const LoginScreen = ({ navigation }) => {
             placeholderTextColor="#A0A0A0"
             secureTextEntry={secureText}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (passwordError) setPasswordError("");
+            }}
           />
           <TouchableOpacity
             style={styles.eyeIcon}
@@ -111,8 +141,16 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.errorText}>{passwordError}</Text>
         ) : null}
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Entrar</Text>
+        <TouchableOpacity
+          style={styles.loginButton}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.loginButtonText}>Entrar</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate("RegisterScreen")}>
