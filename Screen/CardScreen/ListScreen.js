@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, FlatList, StyleSheet, Alert, TextInput, ActivityIndicator, TouchableOpacity, Text } from 'react-native';
+import { View, FlatList, StyleSheet, Alert, TextInput, ActivityIndicator, Image, TouchableOpacity, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductItem from '../Components/ProductItem';
 import debounce from 'lodash.debounce';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import AlertDialog from '../Components/AlertDialog';
+import { Swipeable } from 'react-native-gesture-handler';
+import { Animated } from 'react-native';
 
-// Hook personalizado para gerenciar produtos
 const useProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ const useProducts = () => {
 const ListScreen = ({ route, navigation, isDarkMode }) => {
   const { products, setProducts, loadProducts, saveProducts, loading } = useProducts();
   const [searchText, setSearchText] = useState('');
-  const [filterType, setFilterType] = useState('nome');
+  const [filterType, setFilterType] = useState('descricao');
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
@@ -55,12 +55,12 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
       const newProduct = {
         ...route.params.newProduct,
         id: Date.now().toString(),
-        expirationDate: new Date(route.params.newProduct.expirationDate).toISOString(),
+        validade: new Date(route.params.newProduct.validade).toISOString(),
       };
 
       setProducts((prevProducts) => {
         const productExists = prevProducts.some(
-          (p) => p.name === newProduct.name || p.internalCode === newProduct.internalCode
+          (p) => p.name === newProduct.name || p.codprod === newProduct.codprod
         );
 
         if (!productExists) {
@@ -79,7 +79,7 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
     navigation.setOptions({
       headerShown: true,
       headerStyle: {
-        backgroundColor: isDarkMode ? '#2e2e2e' : '#2e97b7',
+        backgroundColor: isDarkMode ? '#2e2e2e' : '#0077ed',
       },
       headerTintColor: '#FFFFFF',
       headerTitle: 'Lista de Produtos',
@@ -105,10 +105,10 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
     navigation.navigate('AddProductScreen', { product });
   };
 
-  const calculateDaysRemaining = (expirationDate) => {
+  const calculatediasrestantes = (validade) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const expDate = new Date(expirationDate);
+    const expDate = new Date(validade);
     expDate.setHours(0, 0, 0, 0);
     const timeDiff = expDate - today;
     return Math.max(Math.floor(timeDiff / (1000 * 3600 * 24)), 0);
@@ -119,43 +119,102 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
     return products
       .filter((product) => {
         switch (filterType) {
-          case 'nome':
-            return product.name?.toLowerCase().includes(normalizedSearchText);
-          case 'Codigo Interno':
-            return product.internalCode?.toLowerCase().includes(normalizedSearchText);
-          case 'ean':
-            return product.ean?.toLowerCase().includes(normalizedSearchText);
+          case 'descricao':
+            return product.descricao?.toLowerCase().includes(normalizedSearchText);
+          case 'codprod':
+            return product.codprod?.toLowerCase().includes(normalizedSearchText);
+          case 'codauxiliar':
+            return product.codauxiliar?.toLowerCase().includes(normalizedSearchText);
           default:
             return false;
         }
       })
-      .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate));
+      .sort((a, b) => new Date(a.validade) - new Date(b.validade));
   }, [products, searchText, filterType]);
 
   const debouncedSearch = debounce((text) => setSearchText(text), 300);
 
   const renderProductItem = ({ item }) => {
-    const daysRemaining = calculateDaysRemaining(item.expirationDate);
-
+    const diasrestantes = calculatediasrestantes(item.validade);
+  
+    const animatedStyle = new Animated.Value(1);
+  
+    const onSwipeStart = () => {
+      Animated.timing(animatedStyle, {
+        toValue: 0.95,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    };
+  
+    const onSwipeEnd = () => {
+      Animated.timing(animatedStyle, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    };
+  
     return (
-      <View style={[styles.productItem, isDarkMode && styles.darkProductItem]}>
-        <ProductItem
-          product={{
-            ...item,
-            expirationDate: new Date(item.expirationDate).toLocaleDateString(),
-            daysRemaining,
-          }}
-          isDarkMode={isDarkMode}
-        />
-        <View style={styles.actionButtons}>
-          <TouchableOpacity onPress={() => handleEditProduct(item)} style={styles.editButton}>
-            <Icon name="edit" size={20} color="#2e97b7" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleDeleteProduct(item)} style={styles.deleteButton}>
-            <Icon name="trash" size={20} color="#FF6347" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Swipeable
+        renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}  
+        onSwipeableOpen={onSwipeStart}
+        onSwipeableClose={onSwipeEnd}
+        style={styles.swipeable}
+      >
+        <Animated.View
+          style={[
+            styles.productItem,
+            isDarkMode && styles.darkProductItem,
+            { transform: [{ scale: animatedStyle }] },
+          ]}
+        >
+          <ProductItem
+            product={{
+              ...item,
+              validade: new Date(item.validade).toLocaleDateString('pt-BR'),
+              diasrestantes,
+            }}
+            isDarkMode={isDarkMode}
+          />
+        </Animated.View>
+      </Swipeable>
+    );
+  };
+  
+  const renderRightActions = (progress, dragX, item) => {  // Adicionando o parâmetro item
+    const scale = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [1, 0.7], // Reduz o tamanho até 70%
+      extrapolate: 'clamp',
+    });
+  
+    const opacity = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.3, 1], // Aumenta a opacidade gradualmente
+      extrapolate: 'clamp',
+    });
+  
+    return (
+      <Animated.View
+        style={[
+          styles.actionsContainer,
+          { transform: [{ scale }], opacity },
+        ]}
+      >
+        <TouchableOpacity onPress={() => handleEditProduct(item)} style={styles.editAction}>
+          <Image
+            source={require('../../assets/Listpng/Editar.png')}
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleDeleteProduct(item)} style={styles.deleteAction}>
+          <Image
+            source={require('../../assets/Listpng/Excluir.png')}
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
@@ -172,19 +231,18 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
     <View style={[styles.container, isDarkMode && styles.darkBackground]}>
       <View style={styles.searchContainer}>
         <TouchableOpacity style={[styles.filterButton, isDarkMode && styles.darkFilterButton]} onPress={toggleFilter}>
-          <Icon name="filter" size={20} color="#FFFFFF" />
           <Text style={styles.filterText}>{filterType.charAt(0).toUpperCase() + filterType.slice(1)}</Text>
         </TouchableOpacity>
         {isFilterVisible && (
           <View style={[styles.filterOptions, isDarkMode && styles.darkFilterOptions]}>
-            <TouchableOpacity onPress={() => setSelectedFilter('nome')}>
+            <TouchableOpacity onPress={() => setSelectedFilter('descricao')}>
               <Text style={[styles.optionText, styles.lastOptionText]}>Nome</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setSelectedFilter('Codigo Interno')}>
+            <TouchableOpacity onPress={() => setSelectedFilter('codprod')}>
               <Text style={styles.optionText}>Código Interno</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setSelectedFilter('ean')}>
-              <Text style={styles.optionText}>EAN</Text>
+            <TouchableOpacity onPress={() => setSelectedFilter('codauxiliar')}>
+              <Text style={styles.optionText}>Código de barras</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -196,7 +254,7 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
         />
       </View>
       {loading ? (
-        <ActivityIndicator size="large" color="#2e97b7" style={styles.loadingIndicator} />
+        <ActivityIndicator size="large" color="#0077ed" style={styles.loadingIndicator} />
       ) : (
         <FlatList
           data={filterAndSortProducts}
@@ -234,10 +292,11 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2e97b7',
+    backgroundColor: '#0077ed',
     padding: 10,
     borderRadius: 10,
     marginRight: 10,
+    zIndex: 1,
   },
   darkFilterButton: {
     backgroundColor: '#3b3b3b',
@@ -264,7 +323,6 @@ const styles = StyleSheet.create({
   },
   productItem: {
     flexDirection: 'row',
-    padding: 10,
     backgroundColor: '#fff',
     borderRadius: 10,
     marginBottom: 10,
@@ -274,39 +332,57 @@ const styles = StyleSheet.create({
   darkProductItem: {
     backgroundColor: '#333',
   },
-  actionButtons: {
-    position: 'absolute',
-    right: 20,
-    top: 26,
-    flexDirection: 'column',
+  actionsContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 0,
+    paddingBottom: 8,
+    marginRight: 0,
   },
-  editButton: {
-    marginBottom: 100,
+  editAction: {
+    backgroundColor: '#a1b3b2',
+    paddingVertical: 70, // Aumenta a altura do botão
+    paddingHorizontal: 25, // Mantém o padding horizontal
+    borderRadius: 10,
+    marginRight: 8,
   },
-  deleteButton: {
-    marginBottom: 50,
+  
+  deleteAction: {
+    backgroundColor: '#e63032',
+    paddingVertical: 70, // Aumenta a altura do botão
+    paddingHorizontal: 25, // Mantém o padding horizontal
+    borderRadius: 10,
+    marginRight: 2,
   },
   filterOptions: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
     position: 'absolute',
-    top: 50,
+    top: 40,
     left: 0,
-    right: 0,
+    backgroundColor: '#fff',
+    width: 250,
     padding: 10,
-    elevation: 5,
+    borderRadius: 8,
+    boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+    zIndex: 999,
   },
   darkFilterOptions: {
-    backgroundColor: '#333',
+    backgroundColor: '#444',
   },
   optionText: {
-    padding: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     fontSize: 16,
   },
   lastOptionText: {
     borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
+  icon: {
+    width: 24,  // Ajuste o tamanho da imagem
+    height: 24, // Ajuste o tamanho da imagem
+    resizeMode: 'contain', // Faz com que a imagem se ajuste sem distorção
+  }
 });
 
 export default ListScreen;

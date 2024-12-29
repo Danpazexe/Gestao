@@ -4,47 +4,51 @@ import { useNavigation } from '@react-navigation/native';
 import appInfo from '../../app.json';
 
 const DotSpinner = () => {
-  // Criação dos valores animados para os pontos
+  // Lógica
   const animatedValues = Array.from({ length: 8 }, () => new Animated.Value(0));
 
   useEffect(() => {
-    // Criação das animações para cada ponto
-    const animations = animatedValues.map((value, index) => {
-      return Animated.sequence([
+    console.log('[DotSpinner] Iniciando animações.');
+
+    const animations = animatedValues.map((value, index) =>
+      Animated.sequence([
         Animated.timing(value, {
           toValue: 1,
           duration: 1000,
           useNativeDriver: true,
-          delay: index * 55, // Atraso para cada ponto
+          delay: index * 55,
         }),
         Animated.timing(value, {
-          toValue: 0, 
+          toValue: 0,
           duration: 1000,
           useNativeDriver: true,
         }),
-      ]);
-    });
+      ])
+    );
 
-    // Iniciar a animação em loop
     const loopAnimation = Animated.loop(Animated.stagger(100, animations));
     loopAnimation.start();
 
-    // Limpar a animação ao desmontar o componente
     return () => {
+      console.log('[DotSpinner] Parando animações.');
       loopAnimation.stop();
     };
   }, [animatedValues]);
 
+  // Return
   return (
     <View style={styles.dotSpinner}>
       {animatedValues.map((value, index) => (
-        <View key={index} style={[styles.dotSpinnerDot, { transform: [{ rotate: `${index * 45}deg` }] }]}>
+        <View
+          key={index}
+          style={[styles.dotSpinnerDot, { transform: [{ rotate: `${index * 45}deg` }] }]}
+        >
           <Animated.View
             style={[
               styles.dotSpinnerDotBefore,
               {
-                opacity: value, 
-                transform: [{ scale: value }], 
+                opacity: value,
+                transform: [{ scale: value }],
               },
             ]}
           />
@@ -55,53 +59,61 @@ const DotSpinner = () => {
 };
 
 const EntryScreen = () => {
+  // Lógica
   const navigation = useNavigation();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Esconder o cabeçalho da tela de navegação
+    console.log('[EntryScreen] Configurando opções de navegação.');
     navigation.setOptions({ headerShown: false });
 
-    // Navegar para a loginScreen
-    const timer = setTimeout(() => {
-      navigation.navigate('LoginScreen');
-    }, 3000);
+    const loadAppResources = async () => {
+      console.log('[EntryScreen] Iniciando carregamento de recursos.');
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulação do carregamento
+        console.log('[EntryScreen] Recursos carregados com sucesso.');
+      } catch (error) {
+        console.error('[EntryScreen] Erro ao carregar recursos:', error);
+      } finally {
+        setIsLoading(false);
+        console.log('[EntryScreen] Estado de carregamento finalizado.');
+      }
+    };
 
-    // Limpar o timer ao desmontar o componente
-    return () => clearTimeout(timer);
+    loadAppResources();
   }, [navigation]);
 
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('[EntryScreen] Navegando para LoginScreen.');
+      navigation.navigate('LoginScreen');
+    }
+  }, [isLoading, navigation]);
+
+  // Return
   return (
     <ImageBackground
-      // Imagem de Fundo
-      source={require('../../assets/FundoApp.jpg')}
+      source={require('../../assets/Image/FUNDOAPP.png')}
       style={styles.container}
     >
-      {/* Logo */}
-      <Image source={require('../../assets/LogoApp.png')} style={styles.logo} />
-
-      {/* Mensagem de boas-vindas */}
+      <Image source={require('../../assets/Image/LOGO.png')} style={styles.logo} />
       <Text style={styles.title}>Bem-vindo ao Gestão+!</Text>
-
-      {/* Informações de versão */}
       <Text style={styles.versionInfo}>
         Versão: {appInfo.expo.version}{'\n'}Desenvolvido por Daniel
       </Text>
-
-      {/* Animação do dot spinner */}
-      <DotSpinner />
+      {isLoading && <DotSpinner />}
     </ImageBackground>
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
-  // Fundo do Screen de Carregamento
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
-  // Logo de Entrada
   logo: {
     width: '50%',
     height: undefined,
@@ -109,7 +121,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     resizeMode: 'contain',
   },
-  // Título de Entrada
   title: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -117,14 +128,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 12,
   },
-  // Versão de Entrada
   versionInfo: {
     fontSize: 14,
     color: 'gray',
     textAlign: 'center',
     marginVertical: 8,
   },
-  // Carregamento
   dotSpinner: {
     position: 'relative',
     alignItems: 'center',

@@ -19,50 +19,50 @@ const ProductItem = ({ product, isDarkMode }) => {
     }
   };
 
-  const daysRemaining = Number(product.daysRemaining);
-  const { number, label, color } = getDaysToExpirationText(daysRemaining);
+  const diasrestantes = Number(product.diasrestantes);
+  const { number, label, color } = getDaysToExpirationText(diasrestantes);
 
   return (
     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
       <View style={styles.productDetails}>
         {/* Informações do Produto */}
-        <Text style={[styles.productName, isDarkMode && styles.darkProductName]}>{product.name}</Text>
+        <Text style={[styles.productName, isDarkMode && styles.darkProductName]}>{product.descricao}</Text>
 
         {/* Detalhes do Produto */}
         <View style={styles.row}>
           <MaterialIcons name="code" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
           <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Código Interno:</Text>
-          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.internalCode}</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.codprod}</Text>
         </View>
 
         <View style={styles.row}>
           <MaterialIcons name="format-list-numbered" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
           <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Quantidade:</Text>
-          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.quantity}</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.quantidade}</Text>
         </View>
 
         <View style={styles.row}>
           <MaterialIcons name="qr-code" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
           <Text style={[styles.label, isDarkMode && styles.darkLabel]}>EAN:</Text>
-          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.ean}</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.codauxiliar}</Text>
         </View>
 
         <View style={styles.row}>
           <MaterialIcons name="label" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
           <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Lote:</Text>
-          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.batch}</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.lote}</Text>
         </View>
 
         <View style={styles.row}>
           <MaterialIcons name="event" size={20} color={isDarkMode ? '#fefeeb' : '#757575'} style={styles.icon} />
           <Text style={[styles.label, isDarkMode && styles.darkLabel]}>Validade:</Text>
-          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.expirationDate}</Text>
+          <Text style={[styles.value, isDarkMode && styles.darkValue]}>{product.validade}</Text>
         </View>
       </View>
 
       {/* Dias Restantes até a Expiração */}
       <View style={[styles.remainingDaysContainer, { borderColor: color }]}>
-        <Text style={[styles.daysRemaining, { color: color }]}>{number}</Text>
+        <Text style={[styles.diasrestantes, { color: color }]}>{number}</Text>
         <Text style={[styles.daysLabel, { color: color }]}>{label}</Text>
       </View>
     </View>
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
  
-  daysRemaining: {
+  diasrestantes: {
     fontSize: 48,
     fontWeight: 'bold',
   },

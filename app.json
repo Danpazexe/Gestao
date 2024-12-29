@@ -2,12 +2,12 @@
   "expo": {
     "name": "gestao",
     "slug": "Gestao",
-    "version": "0.0.10",
+    "version": "0.0.11",
     "orientation": "portrait",
-    "icon": "./assets/LogoApp.png",
+    "icon": "./assets/Image/LOGO1024.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/LogoAppSplash.png",
+      "image": "./assets/Image/LOGO1024.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/LogoAppAdapt.png",
+        "foregroundImage": "./assets/Image/LOGO432.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.avante.gestao",
@@ -28,7 +28,7 @@
       "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
-      "favicon": "./assets/LogoApp.png"
+      "favicon": "./assets/Image/LOGO1024.png"
     },
     "extra": {
       "eas": {

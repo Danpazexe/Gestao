@@ -1,3 +1,4 @@
+// LoginScreen.js
 import React, { useState } from "react";
 import {
   View,
@@ -15,6 +16,7 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 
 const LoginScreen = ({ navigation }) => {
+  // Estados
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -22,36 +24,54 @@ const LoginScreen = ({ navigation }) => {
   const [secureText, setSecureText] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Função de validação de email
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleLogin = async () => {
-    console.log("Iniciando login...");
+  // Função de validação de senha
+  const validatePassword = (password) => {
+    // Verifica se a senha tem pelo menos 6 caracteres
+    return password.length >= 6;
+  };
 
+  // Função de login
+  const handleLogin = async () => {
+    console.log("[LoginScreen] Iniciando o processo de login...");
+
+    // Validações
     if (!email.trim()) {
       setEmailError("Por favor, insira seu email.");
-      console.log("Erro: Email não informado");
       return;
     }
     if (!validateEmail(email.trim())) {
       setEmailError("Por favor, insira um email válido.");
-      console.log("Erro: Email inválido");
       return;
     }
     if (!password.trim()) {
       setPasswordError("Por favor, insira a senha.");
-      console.log("Erro: Senha não informada");
       return;
     }
+    if (!validatePassword(password)) {
+      setPasswordError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    // Resetando erros
     setEmailError("");
     setPasswordError("");
-
     setIsLoading(true);
-    console.log("Enviando requisição para o servidor...");
 
     try {
+      // Verifica o login fixo
+      if (email.trim().toLowerCase() === "admin@gmail.com" && password === "123456") {
+        Alert.alert("Login bem-sucedido", "Bem-vindo ao aplicativo!");
+        navigation.navigate("HomeScreen");
+        return;
+      }
+
+      // Caso contrário, tenta a autenticação com a API
       const response = await axios.post(
         "https://api.gestao.aviait.com.br/sessions",
         {
@@ -62,70 +82,72 @@ const LoginScreen = ({ navigation }) => {
           headers: { "Content-Type": "application/json" },
         }
       );
-      console.log("Resposta da API:", response);
 
-      if (response.status === 200 && response.data.message === "User authenticated successfully") {
-        console.log("Login bem-sucedido.");
+      console.log("[LoginScreen] Resposta recebida da API:", response.data);
+
+      if (
+        response.status === 200 &&
+        response.data.message === "User authenticated successfully"
+      ) {
+        Alert.alert("Login bem-sucedido", "Bem-vindo ao aplicativo!");
         navigation.navigate("HomeScreen");
       } else {
-        Alert.alert(
-          "Erro",
-          "Login incorreto. Por favor, verifique suas credenciais e tente novamente."
-        );
-        console.log("Erro: Credenciais incorretas");
+        Alert.alert("Erro no Login", "Credenciais incorretas. Tente novamente.");
+        console.error("[LoginScreen] Erro: Credenciais incorretas.");
       }
     } catch (error) {
-      console.error("Erro na requisição:", error);
-      Alert.alert("Erro", "Não foi possível fazer login. Tente novamente.");
+      console.error("[LoginScreen] Erro ao se comunicar com o servidor:", error.message);
+      Alert.alert("Erro no Login", "Não foi possível se conectar ao servidor.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Função para renderizar campos de input
+  const renderInputField = (placeholder, value, setValue, error, setError, secureText = false) => (
+    <>
+      <TextInput
+        style={[styles.input, error && styles.inputError]}
+        placeholder={placeholder}
+        placeholderTextColor="#A0A0A0"
+        value={value}
+        onChangeText={(text) => {
+          setValue(text);
+          if (error) setError("");
+        }}
+        secureTextEntry={secureText}
+      />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    </>
+  );
+
   return (
     <ImageBackground
-      source={require("../../assets/FundoApp.jpg")}
+      source={require('../../assets/Image/FUNDOAPP.png')}
       style={styles.container}
       resizeMode="cover"
     >
       <View style={styles.topSection}>
-        <View style={styles.iconContainer}>
           <Image
-            source={require("../../assets/LogoApp.png")}
+            source={require("../../assets/Image/LOGOCOMFRASE.png")}
             style={styles.icon}
           />
-        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.formContainer}>
         <Text style={styles.title}>Login</Text>
 
-        <TextInput
-          style={[styles.input, emailError && styles.inputError]}
-          placeholder="Email"
-          placeholderTextColor="#A0A0A0"
-          value={email}
-          onChangeText={(text) => {
-            setEmail(text);
-            if (emailError) setEmailError("");
-          }}
-        />
-        {emailError ? (
-          <Text style={styles.errorText}>{emailError}</Text>
-        ) : null}
+        {renderInputField("Email", email, setEmail, emailError, setEmailError)}
 
         <View style={styles.passwordContainer}>
-          <TextInput
-            style={[styles.input, passwordError && styles.inputError]}
-            placeholder="Senha"
-            placeholderTextColor="#A0A0A0"
-            secureTextEntry={secureText}
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (passwordError) setPasswordError("");
-            }}
-          />
+          {renderInputField(
+            "Senha", 
+            password, 
+            setPassword, 
+            passwordError, 
+            setPasswordError, 
+            secureText
+          )}
           <TouchableOpacity
             style={styles.eyeIcon}
             onPress={() => setSecureText(!secureText)}
@@ -137,9 +159,6 @@ const LoginScreen = ({ navigation }) => {
             />
           </TouchableOpacity>
         </View>
-        {passwordError ? (
-          <Text style={styles.errorText}>{passwordError}</Text>
-        ) : null}
 
         <TouchableOpacity
           style={styles.loginButton}
@@ -169,29 +188,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topSection: {
-    height: "35%",
+    height: "40%",
     justifyContent: "center",
     alignItems: "center",
     borderBottomLeftRadius: 50,
     borderBottomRightRadius: 50,
     paddingTop: 50,
   },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 60,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 8,
-  },
   icon: {
-    width: 100,
-    height: 100,
+    width: 350,
+    height: 400,
     resizeMode: "contain",
   },
   formContainer: {
@@ -202,9 +208,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   title: {
-    fontSize: 26,
+    fontSize: 36,
     fontWeight: "bold",
-    color: "#000000",
+    color:"rgb(122, 122, 122)",
     marginBottom: 30,
   },
   input: {
@@ -221,6 +227,7 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: "#FF0000",
+    borderWidth: 2,
   },
   errorText: {
     color: "#FF0000",
@@ -230,7 +237,7 @@ const styles = StyleSheet.create({
   loginButton: {
     width: "100%",
     height: 50,
-    backgroundColor: "#000000",
+    backgroundColor: "#0367A6",
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
@@ -247,7 +254,7 @@ const styles = StyleSheet.create({
     color: "#00000A",
   },
   signupText: {
-    color: "#000000",
+    color: "#0367A6",
     fontWeight: "bold",
   },
   passwordContainer: {
@@ -256,8 +263,8 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     position: "absolute",
+    top: 12,
     right: 15,
-    top: 15,
   },
 });
 
