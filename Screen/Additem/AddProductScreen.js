@@ -4,6 +4,9 @@ import { View, Text, Alert, StyleSheet, TouchableOpacity, ScrollView, TextInput 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import Dados from '../../assets/Dados.json'; // ou importação de onde os dados estão salvos
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Toast from 'react-native-toast-message';
 
 const AddProductScreen = ({ navigation, route, isDarkMode }) => {
   const [productName, setProductName] = useState('');
@@ -15,6 +18,8 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [productId, setProductId] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [showErrors, setShowErrors] = useState(false);
 
   useEffect(() => {
     // Função que carrega os dados do produto para edição
@@ -89,15 +94,40 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
       setProductName(product.DESCRICAO);  // Nome do produto
       setcodprod(String(product.CODPROD)); // Garantir que CODPROD seja uma string
       setEan(String(product.CODAUXILIAR)); // Garantir que CODAUXILIAR seja uma string
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Produto Encontrado',
+        text2: 'Dados preenchidos automaticamente',
+        visibilityTime: 2000,
+        position: 'top',
+      });
     } else {
-      console.log(`Produto não encontrado no JSON para EAN: ${formattedScannedEan}`);
-      Alert.alert('Produto não encontrado', 'Não foi possível encontrar o produto com o EAN fornecido.');
+      Toast.show({
+        type: 'error',
+        text1: 'Produto não encontrado',
+        text2: 'Não foi possível encontrar o produto com o EAN fornecido.',
+        visibilityTime: 3000,
+        position: 'top',
+      });
     }
   };
   
   const handleSaveProduct = async () => {
-    if (!validateInputs()) {
-      console.log("Produto não salvo devido a erro de validação");
+    setShowErrors(true);
+
+    const hasEmptyFields = ['productName', 'lote', 'quantidade', 'codprod', 'codauxiliar', 'validade'].some(field => 
+      checkEmptyFields(field)
+    );
+
+    if (hasEmptyFields) {
+      Toast.show({
+        type: 'error',
+        text1: 'Campos Obrigatórios',
+        text2: 'Por favor, preencha todos os campos obrigatórios.',
+        visibilityTime: 3000,
+        position: 'top',
+      });
       return;
     }
 
@@ -136,21 +166,47 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
 
       await AsyncStorage.setItem('products', JSON.stringify(products));
 
-      Alert.alert('Sucesso', isEditing ? 'Produto atualizado com sucesso!' : 'Produto salvo com sucesso!');
+      Toast.show({
+        type: 'success',
+        text1: 'Sucesso',
+        text2: isEditing ? 'Produto atualizado com sucesso!' : 'Produto salvo com sucesso!',
+        visibilityTime: 2000,
+        position: 'top',
+      });
       navigation.navigate('HomeScreen');
     } catch (error) {
-      console.error("Erro ao salvar produto:", error);  // Log de erro ao salvar produto
-      Alert.alert('Erro', 'Erro ao salvar produto');
+      console.error("Erro ao salvar produto:", error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erro',
+        text2: 'Erro ao salvar produto',
+        visibilityTime: 3000,
+        position: 'top',
+      });
     }
   };
 
   const handleScanBarcode = async () => {
     const { status } = await BarCodeScanner.requestPermissionsAsync();
-    console.log("Status da permissão para a câmera:", status);  // Log do status da permissão
+    console.log("Status da permissão para a câmera:", status);
+    
     if (status === 'granted') {
+      Toast.show({
+        type: 'info',
+        text1: 'Scanner Ativo',
+        text2: 'Posicione o código de barras no centro da tela',
+        position: 'top',
+        visibilityTime: 3000,
+      });
       navigation.navigate('BarcodeScannerScreen');
     } else {
-      Alert.alert('Permissão necessária', 'A permissão para acessar a câmera é necessária para escanear o código de barras.');
+      Toast.show({
+        type: 'error',
+        text1: 'Permissão necessária',
+        text2: 'A permissão para acessar a câmera é necessária para escanear o código de barras.',
+        visibilityTime: 3000,
+        position: 'top',
+      });
     }
   };
 
@@ -162,146 +218,404 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
     }
   };
 
+  // Função para verificar campos vazios
+  const checkEmptyFields = (field) => {
+    switch (field) {
+      case 'productName':
+        return !productName.trim();
+      case 'lote':
+        return !lote.trim();
+      case 'quantidade':
+        return !quantidade.trim();
+      case 'codprod':
+        return !codprod.trim();
+      case 'codauxiliar':
+        return !codauxiliar.trim();
+      default:
+        return false;
+    }
+  };
+
+  // Função para renderizar o ícone de status do campo
+  const renderFieldStatus = (field) => {
+    if (!showErrors) return null;
+
+    if (checkEmptyFields(field)) {
+      return (
+        <MaterialIcons 
+          name="error-outline" 
+          size={24} 
+          color={isDarkMode ? '#FF6B6B' : '#B00020'}
+          style={styles.fieldIcon}
+        />
+      );
+    }
+    return (
+      <MaterialIcons 
+        name="check-circle" 
+        size={24} 
+        color={isDarkMode ? '#4ADE80' : '#4CAF50'}
+        style={styles.fieldIcon}
+      />
+    );
+  };
+
+  // Mova a definição dos styles para dentro do componente
+  const getStyles = (isDarkMode) => StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollViewContent: {
+      flexGrow: 1,
+      paddingBottom: 20, // Espaço extra no final da rolagem
+    },
+    headerGradient: {
+      padding: 16,
+      alignItems: 'center',
+    },
+    headerTitle: {
+      color: '#FFFFFF',
+      fontSize: 22,
+      fontWeight: 'bold',
+    },
+    formCard: {
+      margin: 16,
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    fieldContainer: {
+      marginBottom: 16, // Aumentado o espaçamento entre campos
+    },
+    rowContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    label: {
+      fontSize: 15,
+      fontWeight: '600',
+      marginBottom: 6,
+      color: isDarkMode ? '#FFFFFF' : '#333333',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderRadius: 8,
+      borderColor: isDarkMode ? '#404040' : '#E0E0E0',
+      backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
+      padding: 4,
+    },
+    input: {
+      flex: 1,
+      height: 45,
+      paddingHorizontal: 14,
+      fontSize: 15,
+      color: isDarkMode ? '#FFFFFF' : '#000000',
+    },
+    lightInput: {
+      backgroundColor: '#FFFFFF',
+      color: '#000000',
+    },
+    darkInput: {
+      backgroundColor: '#333333',
+      color: '#E0E0E0',
+      borderColor: '#404040',
+    },
+    eanContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    eanInput: {
+      flex: 1,
+      height: 48,
+      marginRight: 8,
+      borderRadius: 8,
+      paddingHorizontal: 16,
+      fontSize: 16,
+      borderWidth: 1,
+      borderColor: isDarkMode ? '#404040' : '#E0E0E0',
+    },
+    scanButton: {
+      width: 45,
+      height: 45,
+      backgroundColor: isDarkMode ? '#4A6B50' : '#5d7e62',
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    dateButton: {
+      height: 45,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      borderRadius: 8,
+    },
+    dateText: {
+      marginLeft: 8,
+      fontSize: 16,
+    },
+    saveButton: {
+      flexDirection: 'row',
+      backgroundColor: isDarkMode ? '#4A6B50' : '#5d7e62',
+      height: 50,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    saveButtonText: {
+      color: '#FFFFFF',
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginLeft: 8,
+    },
+    lightBackground: {
+      backgroundColor: '#F5F5F5',
+    },
+    darkBackground: {
+      backgroundColor: '#121212',
+    },
+    lightText: {
+      color: '#333333',
+    },
+    darkText: {
+      color: '#E0E0E0',
+    },
+    fieldIcon: {
+      marginRight: 12,
+      marginLeft: 4,
+    },
+    requiredText: {
+      fontSize: 12,
+      marginTop: 4,
+      color: isDarkMode ? '#FF6B6B' : '#B00020',
+    },
+    emptyField: {
+      borderColor: isDarkMode ? '#FF6B6B' : '#B00020',
+      borderWidth: 2,
+      backgroundColor: isDarkMode ? '#2D1F1F' : '#FFF5F5',
+    },
+    requiredAsterisk: {
+      color: isDarkMode ? '#FF6B6B' : '#B00020',
+      marginLeft: 4,
+    },
+  });
+
+  // Use os estilos dentro do componente
+  const styles = getStyles(isDarkMode);
+
   return (
-    <ScrollView contentContainerStyle={[styles.container, isDarkMode ? styles.darkBackground : styles.lightBackground]}>
-      <View style={styles.titleContainer}></View>
-      
-      {/* Campos de Entrada */}
-      <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>Nome do Produto</Text>
-      <TextInput placeholder="Ex: Sabão em Pó" value={productName} onChangeText={setProductName} style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'} />
-      
-      <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>Lote</Text>
-      <TextInput placeholder="Ex: 123456" value={lote} onChangeText={setBatch} style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'} />
-      
-      <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>Quantidade</Text>
-      <TextInput placeholder="Ex: 10" value={quantidade} onChangeText={(text) => setQuantity(text.replace(/[^0-9]/g, ''))} keyboardType="numeric" style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'} />
-      
-      <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>Código Interno</Text>
-      <TextInput placeholder="Ex: 001" value={codprod} onChangeText={(text) => setcodprod(text.replace(/[^0-9]/g, ''))} keyboardType="numeric" style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'} />
-      
-      <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>EAN</Text>
-      <View style={styles.eanContainer}>
-        <TextInput placeholder="Ex: 7891234567890" value={codauxiliar} onChangeText={(text) => setEan(text.replace(/[^0-9]/g, ''))} keyboardType="numeric" style={[styles.eanInput, isDarkMode ? styles.darkInput : styles.lightInput]} placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'} />
-        <TouchableOpacity style={styles.scanButton} onPress={handleScanBarcode}>
-          <Text style={styles.buttonText}>Escanear</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={[
+      styles.container, 
+      isDarkMode ? styles.darkBackground : styles.lightBackground
+    ]}>
+      <LinearGradient
+        colors={isDarkMode ? ['#1E272E', '#2C3A47'] : ['#5d7e62', '#3b4f43']}
+        style={styles.headerGradient}
+      >
+        <Text style={styles.headerTitle}>
+          {isEditing ? 'Editar Produto' : 'Novo Produto'}
+        </Text>
+      </LinearGradient>
 
-      {/* Selecionar Data de Validade */}
-      <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>Data de Validade</Text>
-      <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowDatePicker(true)}>
-        <Text style={styles.buttonText}>Selecionar Data</Text>
-      </TouchableOpacity>
-      {showDatePicker && (
-        <DateTimePicker value={validade} mode="date" display="spinner" onChange={onChangeDate} minimumDate={new Date()} locale="pt-BR" />
-      )}
-      <Text style={[styles.selectedDateText, isDarkMode ? styles.darkText : styles.lightText]}>
-        {validade ? `Data Selecionada: ${validade.toLocaleDateString('pt-BR')}` : 'Nenhuma data selecionada'}
-      </Text>
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollViewContent}
+      >
+        <View style={styles.formCard}>
+          {/* Campo Nome do Produto */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
+              Nome do Produto
+            </Text>
+            <View style={[
+              styles.inputContainer,
+              showErrors && checkEmptyFields('productName') && styles.emptyField
+            ]}>
+              <TextInput
+                placeholder="Ex: Sabão em Pó"
+                value={productName}
+                onChangeText={setProductName}
+                style={styles.input}
+                placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'}
+              />
+              {renderFieldStatus('productName')}
+            </View>
+            {showErrors && checkEmptyFields('productName') && (
+              <Text style={styles.requiredText}>Campo obrigatório</Text>
+            )}
+          </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSaveProduct}>
-        <Text style={styles.buttonText}>{isEditing ? 'Atualizar Produto' : 'Salvar Produto'}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+          {/* Campos Lote e Quantidade em linha */}
+          <View style={styles.rowContainer}>
+            <View style={[styles.fieldContainer, { flex: 1, marginRight: 10 }]}>
+              <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
+                Lote
+              </Text>
+              <View style={[
+                styles.inputContainer,
+                showErrors && checkEmptyFields('lote') && styles.emptyField
+              ]}>
+                <TextInput
+                  placeholder="Ex: 123456"
+                  value={lote}
+                  onChangeText={setBatch}
+                  style={styles.input}
+                  placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'}
+                />
+                {renderFieldStatus('lote')}
+              </View>
+              {showErrors && checkEmptyFields('lote') && (
+                <Text style={styles.requiredText}>Campo obrigatório</Text>
+              )}
+            </View>
+
+            <View style={[styles.fieldContainer, { flex: 1 }]}>
+              <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
+                Quantidade
+              </Text>
+              <View style={[
+                styles.inputContainer,
+                showErrors && checkEmptyFields('quantidade') && styles.emptyField
+              ]}>
+                <TextInput
+                  placeholder="Ex: 10"
+                  value={quantidade}
+                  onChangeText={(text) => setQuantity(text.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  style={styles.input}
+                  placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'}
+                />
+                {renderFieldStatus('quantidade')}
+              </View>
+              {showErrors && checkEmptyFields('quantidade') && (
+                <Text style={styles.requiredText}>Campo obrigatório</Text>
+              )}
+            </View>
+          </View>
+
+          {/* Campo Código Interno */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
+              Código Interno
+            </Text>
+            <View style={[
+              styles.inputContainer,
+              showErrors && checkEmptyFields('codprod') && styles.emptyField
+            ]}>
+              <TextInput
+                placeholder="Ex: 001"
+                value={codprod}
+                onChangeText={(text) => setcodprod(text.replace(/[^0-9]/g, ''))}
+                keyboardType="numeric"
+                style={styles.input}
+                placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'}
+              />
+              {renderFieldStatus('codprod')}
+            </View>
+            {showErrors && checkEmptyFields('codprod') && (
+              <Text style={styles.requiredText}>Campo obrigatório</Text>
+            )}
+          </View>
+
+          {/* Campo EAN */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
+              EAN
+            </Text>
+            <View style={styles.eanContainer}>
+              <View style={[
+                styles.inputContainer,
+                { flex: 1, marginRight: 8 },
+                showErrors && checkEmptyFields('codauxiliar') && styles.emptyField
+              ]}>
+                <TextInput
+                  placeholder="Ex: 7891234567890"
+                  value={codauxiliar}
+                  onChangeText={(text) => setEan(text.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  style={styles.input}
+                  placeholderTextColor={isDarkMode ? '#A8B8A7' : '#A9A9A9'}
+                />
+                {renderFieldStatus('codauxiliar')}
+              </View>
+              <TouchableOpacity 
+                style={styles.scanButton} 
+                onPress={handleScanBarcode}
+              >
+                <MaterialCommunityIcons name="barcode-scan" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            {showErrors && checkEmptyFields('codauxiliar') && (
+              <Text style={styles.requiredText}>Campo obrigatório</Text>
+            )}
+          </View>
+
+          {/* Campo Data de Validade */}
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
+              Data de Validade
+            </Text>
+            <View style={[
+              styles.inputContainer,
+              showErrors && checkEmptyFields('validade') && styles.emptyField
+            ]}>
+              <TouchableOpacity 
+                style={[styles.dateButton, { flex: 1, borderWidth: 0 }]} 
+                onPress={() => setShowDatePicker(true)}
+              >
+                <MaterialCommunityIcons 
+                  name="calendar" 
+                  size={24} 
+                  color={isDarkMode ? '#A8B8A7' : '#5d7e62'} 
+                />
+                <Text style={[styles.dateText, isDarkMode ? styles.darkText : styles.lightText]}>
+                  {validade.toLocaleDateString('pt-BR')}
+                </Text>
+              </TouchableOpacity>
+              {renderFieldStatus('validade')}
+            </View>
+            {showErrors && checkEmptyFields('validade') && (
+              <Text style={styles.requiredText}>Campo obrigatório</Text>
+            )}
+          </View>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={validade}
+              mode="date"
+              display="spinner"
+              onChange={onChangeDate}
+              minimumDate={new Date()}
+              locale="pt-BR"
+            />
+          )}
+
+          <TouchableOpacity 
+            style={styles.saveButton} 
+            onPress={handleSaveProduct}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons name="content-save" size={24} color="#FFFFFF" />
+            <Text style={styles.saveButtonText}>
+              {isEditing ? 'Atualizar' : 'Salvar'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  lightBackground: {
-    backgroundColor: '#F9F9F9', 
-  },
-  darkBackground: {
-    backgroundColor: '#181818', 
-  },
-  titleContainer: {
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  input: {
-    height: 50,
-    marginBottom: 15,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    fontSize: 16,
-    borderWidth: 1.5,
-    borderColor: '#5d7e62', 
-  },
-  lightInput: {
-    backgroundColor: '#FFFFFF',
-  },
-  darkInput: {
-    backgroundColor: '#2E3D34', 
-  },
-  lightText: {
-    color: '#000000',
-  },
-  darkText: {
-    color: '#E0E0E0', 
-  },
-  label: {
-    marginBottom: 3,
-    fontWeight: 'bold',
-    fontSize: 13,
-  },
-  eanContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  eanInput: {
-    flex: 1,
-    height: 50,
-    marginRight: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    fontSize: 16,
-    borderWidth: 1.5,
-    borderColor: '#5d7e62', 
-  },
-  scanButton: {
-    backgroundColor: '#5d7e62',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 50,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  dateText: {
-    fontSize: 18,
-    color: '#555555',
-    textAlign: 'center',
-    marginVertical: 10,
-  },
-  selectedDateText: {
-    fontSize: 18,
-    color: '#333333',
-    textAlign: 'center',
-    marginVertical: 10,
-    fontWeight: 'bold',
-  },
-  datePickerButton: {
-    backgroundColor: '#5d7e62',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 50,
-    marginBottom: 20,
-  },
-  saveButton: {
-    backgroundColor: '#5d7e62',
-    paddingVertical: 15,
-    alignItems: 'center',
-    borderRadius: 50,
-    marginTop: 20,
-  },
-});
 
 export default AddProductScreen;
