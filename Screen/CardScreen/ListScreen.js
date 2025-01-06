@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, FlatList, StyleSheet, Alert, TextInput, ActivityIndicator, Image, TouchableOpacity, Text } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, FlatList, StyleSheet, Alert, TextInput, ActivityIndicator, Image, TouchableOpacity, Text, Modal, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductItem from '../Components/ProductItem';
 import debounce from 'lodash.debounce';
@@ -7,6 +7,7 @@ import AlertDialog from '../Components/AlertDialog';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Animated, LayoutAnimation } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 
 const useProducts = () => {
   const [products, setProducts] = useState([]);
@@ -39,6 +40,118 @@ const useProducts = () => {
   return { products, setProducts, loadProducts, saveProducts, loading };
 };
 
+const getModalStyles = (isDarkMode) => StyleSheet.create({
+  quantitySection: {
+    backgroundColor: isDarkMode ? '#2A2A2A' : '#F5F5F5',
+    borderRadius: 15,
+    padding: 16,
+    marginBottom: 20,
+  },
+});
+
+const TreatmentModal = ({ 
+  visible, 
+  onClose, 
+  onTreat, 
+  selectedProduct, 
+  isDarkMode,
+  quantity,
+  onQuantityChange 
+}) => {
+  const modalStyles = getModalStyles(isDarkMode);
+
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalView, isDarkMode && styles.darkModalView]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>
+              Tratativa de Produto
+            </Text>
+            <Text style={[styles.productName, isDarkMode && { color: '#999' }]} numberOfLines={1}>
+              {selectedProduct?.descricao}
+            </Text>
+          </View>
+
+          <View style={[styles.quantitySection, isDarkMode && styles.darkQuantitySection]}>
+            <View style={styles.quantityInfo}>
+              <Text style={[styles.quantityLabel, isDarkMode && { color: '#999' }]}>
+                Estoque Atual:
+              </Text>
+              <Text style={[styles.quantityValue, isDarkMode && styles.darkText]}>
+                {selectedProduct?.quantidade || 0} unidades
+              </Text>
+            </View>
+            
+            <View style={styles.quantityInputWrapper}>
+              <Text style={[styles.quantityInputLabel, isDarkMode && { color: '#999' }]}>
+                Quantidade a tratar:
+              </Text>
+              <TextInput
+                style={[styles.quantityInput, isDarkMode && styles.darkQuantityInput]}
+                value={quantity}
+                onChangeText={onQuantityChange}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor={isDarkMode ? '#666' : '#999'}
+                textAlign="center"
+              />
+            </View>
+          </View>
+
+          <View style={styles.buttonsContainer}>
+            <Pressable
+              style={[styles.treatmentButton, styles.sellButton]}
+              onPress={() => onTreat(selectedProduct, 'sold')}
+            >
+              <MaterialIcons name="shopping-cart" size={24} color="#FFF" />
+              <Text style={styles.treatmentButtonText}>Vendido</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.treatmentButton, styles.exchangeButton]}
+              onPress={() => onTreat(selectedProduct, 'exchanged')}
+            >
+              <MaterialIcons name="swap-horiz" size={24} color="#FFF" />
+              <Text style={styles.treatmentButtonText}>Trocado</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.treatmentButton, styles.returnButton]}
+              onPress={() => onTreat(selectedProduct, 'returned')}
+            >
+              <MaterialIcons name="assignment-return" size={24} color="#FFF" />
+              <Text style={styles.treatmentButtonText}>Devolvido</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.treatmentButton, styles.expiredButton]}
+              onPress={() => onTreat(selectedProduct, 'expired')}
+            >
+              <MaterialIcons name="error" size={24} color="#FFF" />
+              <Text style={styles.treatmentButtonText}>Vencido</Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={[styles.cancelButton, isDarkMode && styles.darkCancelButton]}
+            onPress={onClose}
+          >
+            <Text style={[styles.cancelButtonText, isDarkMode && styles.darkText]}>
+              Cancelar
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 const ListScreen = ({ route, navigation, isDarkMode }) => {
   const { products, setProducts, loadProducts, saveProducts, loading } = useProducts();
   const [searchText, setSearchText] = useState('');
@@ -47,6 +160,9 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [showExpiring, setShowExpiring] = useState(false);
+  const [treatmentModalVisible, setTreatmentModalVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [treatmentQuantity, setTreatmentQuantity] = useState('');
 
   useEffect(() => {
     loadProducts();
@@ -160,11 +276,13 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
 
   const filterAndSortProducts = useMemo(() => {
     const normalizedSearchText = searchText.toLowerCase().trim();
-    let filteredProducts = products;
+    
+    // Primeiro, filtra os produtos não tratados
+    let filteredProducts = products.filter(product => !product.status || product.status !== 'treated');
     
     // Filtro de produtos próximos ao vencimento (30 dias)
     if (showExpiring) {
-      filteredProducts = products.filter(product => {
+      filteredProducts = filteredProducts.filter(product => {
         const diasrestantes = calculatediasrestantes(product.validade);
         return diasrestantes <= 30;
       });
@@ -204,6 +322,15 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
 
   const debouncedSearch = debounce((text) => setSearchText(text), 300);
 
+  const handleModalClose = useCallback(() => {
+    setTreatmentModalVisible(false);
+    setTreatmentQuantity('');
+  }, []);
+
+  const handleQuantityChange = useCallback((value) => {
+    setTreatmentQuantity(value);
+  }, []);
+
   const renderProductItem = ({ item }) => {
     const diasrestantes = calculatediasrestantes(item.validade);
     let row = [];
@@ -219,8 +346,11 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
     return (
       <Swipeable
         ref={ref => row[item.id] = ref}
+        renderLeftActions={(progress, dragX) => renderLeftActions(progress, dragX, item)}
         renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
+        leftThreshold={40}
         rightThreshold={40}
+        overshootLeft={false}
         overshootRight={false}
         onSwipeableOpen={() => closeRow(item.id)}
         friction={2}
@@ -276,6 +406,24 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
           ]}
         >
           <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+            onPress={() => {
+              setSelectedProduct(item);
+              setTreatmentModalVisible(true);
+            }}
+          >
+            <View style={styles.actionButtonContent}>
+              <MaterialIcons 
+                name="check-circle" 
+                size={24} 
+                color="#FFF"
+                style={styles.actionIcon}
+              />
+              <Text style={styles.actionButtonText}>Tratar</Text>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
             style={[styles.actionButton, styles.editButton]}
             onPress={() => handleEditProduct(item)}
           >
@@ -302,6 +450,58 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
                 style={styles.actionIcon}
               />
               <Text style={styles.actionButtonText}>Excluir</Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    );
+  };
+
+  const renderLeftActions = (progress, dragX, item) => {
+    const translateX = dragX.interpolate({
+      inputRange: [0, 50, 100, 101],
+      outputRange: [-20, 0, 0, 1],
+    });
+
+    const scale = progress.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0.5, 0.8, 1],
+    });
+
+    const opacity = progress.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0, 0.3, 1],
+    });
+
+    return (
+      <View style={styles.leftActionsContainer}>
+        <Animated.View 
+          style={[
+            styles.leftActionsWrapper,
+            {
+              transform: [
+                { translateX },
+                { scale }
+              ],
+              opacity,
+            }
+          ]}
+        >
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+            onPress={() => {
+              setSelectedProduct(item);
+              setTreatmentModalVisible(true);
+            }}
+          >
+            <View style={styles.actionButtonContent}>
+              <MaterialIcons 
+                name="check-circle" 
+                size={24} 
+                color="#FFF"
+                style={styles.actionIcon}
+              />
+              <Text style={styles.actionButtonText}>Tratar</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -363,6 +563,99 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
         return 'Buscar por código de barras...';
       default:
         return 'Buscar produto...';
+    }
+  };
+
+  const handleTreatProduct = async (product, treatmentType) => {
+    try {
+      const quantity = parseInt(treatmentQuantity);
+      
+      if (isNaN(quantity) || quantity <= 0) {
+        Toast.show({
+          type: 'error',
+          text1: 'Quantidade Inválida',
+          text2: 'Por favor, insira uma quantidade válida',
+          visibilityTime: 3000,
+          position: 'top',
+        });
+        return;
+      }
+
+      if (quantity > product.quantidade) {
+        Toast.show({
+          type: 'error',
+          text1: 'Quantidade Excede Estoque',
+          text2: 'A quantidade não pode ser maior que o estoque disponível',
+          visibilityTime: 3000,
+          position: 'top',
+        });
+        return;
+      }
+
+      const updatedProducts = products.map(p => {
+        if (p.id === product.id) {
+          const remainingQuantity = p.quantidade - quantity;
+          
+          if (remainingQuantity > 0) {
+            // Se ainda sobrar quantidade, cria um novo produto tratado e atualiza o original
+            const treatedProduct = {
+              ...p,
+              id: Date.now().toString(), // Novo ID para o produto tratado
+              status: 'treated',
+              treatmentType,
+              treatmentDate: new Date().toISOString(),
+              quantidade: quantity,
+            };
+            
+            // Atualiza a quantidade do produto original
+            p.quantidade = remainingQuantity;
+            
+            // Retorna um array com ambos os produtos
+            return [p, treatedProduct];
+          } else {
+            // Se toda a quantidade foi tratada, apenas marca o produto como tratado
+            return [{
+              ...p,
+              status: 'treated',
+              treatmentType,
+              treatmentDate: new Date().toISOString(),
+              quantidade: quantity,
+            }];
+          }
+        }
+        return [p];
+      });
+
+      // Flatten o array de produtos
+      const flattenedProducts = updatedProducts.flat();
+
+      await AsyncStorage.setItem('products', JSON.stringify(flattenedProducts));
+      setProducts(flattenedProducts);
+      setTreatmentModalVisible(false);
+      setSelectedProduct(null);
+      setTreatmentQuantity('');
+
+      Toast.show({
+        type: 'success',
+        text1: 'Produto Tratado',
+        text2: `${quantity} unidades ${
+          treatmentType === 'sold' ? 'vendidas' : 
+          treatmentType === 'exchanged' ? 'trocadas' : 
+          treatmentType === 'returned' ? 'devolvidas' : 
+          'vencidas'
+        }`,
+        visibilityTime: 2000,
+        position: 'top',
+      });
+    } catch (error) {
+      console.error('Erro ao tratar produto:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erro',
+        text2: 'Não foi possível tratar o produto',
+        visibilityTime: 3000,
+        position: 'top',
+      });
     }
   };
 
@@ -440,6 +733,15 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
         onConfirm={confirmDeleteProduct}
         onCancel={() => setAlertVisible(false)}
         onDismiss={() => setAlertVisible(false)}
+      />
+      <TreatmentModal
+        visible={treatmentModalVisible}
+        onClose={handleModalClose}
+        onTreat={handleTreatProduct}
+        selectedProduct={selectedProduct}
+        isDarkMode={isDarkMode}
+        quantity={treatmentQuantity}
+        onQuantityChange={handleQuantityChange}
       />
     </View>
   );
@@ -649,6 +951,167 @@ const styles = StyleSheet.create({
   },
   darkStatsText: {
     color: '#aaa',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalView: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  darkModalView: {
+    backgroundColor: '#1E1E1E',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  darkText: {
+    color: '#FFFFFF',
+  },
+  productName: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  quantitySection: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 15,
+    padding: 16,
+    marginBottom: 20,
+  },
+  darkQuantitySection: {
+    backgroundColor: '#2A2A2A',
+  },
+  quantityInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  quantityLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  quantityValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  quantityInputWrapper: {
+    alignItems: 'center',
+  },
+  quantityInputLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  quantityInput: {
+    width: '50%',
+    height: 50,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  darkQuantityInput: {
+    backgroundColor: '#333',
+    color: '#FFF',
+    borderColor: '#404040',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 20,
+  },
+  treatmentButton: {
+    width: '48%',
+    height: 80,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 15,
+    padding: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  sellButton: {
+    backgroundColor: '#4CAF50',
+  },
+  exchangeButton: {
+    backgroundColor: '#2196F3',
+  },
+  returnButton: {
+    backgroundColor: '#FF9800',
+  },
+  expiredButton: {
+    backgroundColor: '#FF5252',
+  },
+  treatmentButtonText: {
+    color: '#FFF',
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+  },
+  darkCancelButton: {
+    backgroundColor: '#2A2A2A',
+    borderWidth: 1,
+    borderColor: '#404040',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  leftActionsContainer: {
+    width: 100,
+    height: '100%',
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    marginLeft: 10,
+  },
+  leftActionsWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingVertical: 6,
   },
 });
 

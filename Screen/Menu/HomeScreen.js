@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
 import LottieView from "lottie-react-native";
 import { useNavigation } from "@react-navigation/native";
+import { MaterialIcons } from '@expo/vector-icons';
 
 const HomeScreen = ({ isDarkMode }) => {
   const navigation = useNavigation();
 
-  const buttons = [
+  const [buttons] = useState([
     {
       title: "Ver Lista",
       screen: "ListScreen",
@@ -27,6 +28,13 @@ const HomeScreen = ({ isDarkMode }) => {
       colorDark: "#C42D2F",
       colorLight: "#d9434f",
       animation: require("../../assets/GifMenu/Dash.json"),
+    },
+    {
+      title: "Tratativas",
+      screen: "TreatedItemsScreen",
+      colorDark: "#FF8C00",
+      colorLight: "#FFA500",
+      animation: require("../../assets/GifMenu/Tratar.json"),
     },
     {
       title: "Export/Import",
@@ -63,17 +71,21 @@ const HomeScreen = ({ isDarkMode }) => {
       colorLight: "#be5e46",
       animation: require("../../assets/GifMenu/Build.json"),
     },
-  ];
+  ]);
 
   const [pressedButton, setPressedButton] = useState(null);
-  const [buttonAnimations] = useState(
-    buttons.map(() => new Animated.Value(0))
+  const [buttonAnimations, setButtonAnimations] = useState(() => 
+    Array(buttons.length).fill(0).map(() => new Animated.Value(0))
   );
 
   useEffect(() => {
     console.log("HomeScreen carregada.");
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
+
+  useEffect(() => {
+    setButtonAnimations(Array(buttons.length).fill(0).map(() => new Animated.Value(0)));
+  }, [buttons.length]);
 
   const handleNavigation = (screen) => {
     console.log(`Navegando para: ${screen}`);
@@ -145,7 +157,7 @@ const HomeScreen = ({ isDarkMode }) => {
                   style={styles.icon}
                   autoPlay
                   loop
-                  speed={0.3}
+                  speed={0.5}
                 />
                 <Text style={styles.buttonTitle}>{button.title}</Text>
               </TouchableOpacity>
@@ -222,6 +234,22 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+    marginBottom: 16,
+  },
+  darkMenuItem: {
+    backgroundColor: '#333',
+  },
+  menuItemText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
