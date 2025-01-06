@@ -5,7 +5,8 @@ import ProductItem from '../Components/ProductItem';
 import debounce from 'lodash.debounce';
 import AlertDialog from '../Components/AlertDialog';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Animated } from 'react-native';
+import { Animated, LayoutAnimation } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const useProducts = () => {
   const [products, setProducts] = useState([]);
@@ -45,6 +46,7 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [showExpiring, setShowExpiring] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -76,15 +78,57 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
   }, [route?.params?.newProduct]);
 
   useEffect(() => {
+    const headerButtonStyle = {
+      padding: 8,
+      borderRadius: 8,
+      marginLeft: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1e88e5' : 'rgba(255, 255, 255, 0.2)',
+    };
+
     navigation.setOptions({
       headerShown: true,
       headerStyle: {
         backgroundColor: isDarkMode ? '#2e2e2e' : '#0077ed',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
       },
       headerTintColor: '#FFFFFF',
+      headerTitleStyle: {
+        fontSize: 20,
+        fontWeight: '600',
+        letterSpacing: 0.5,
+      },
       headerTitle: 'Lista de Produtos',
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', marginRight: 8 }}>
+          <TouchableOpacity 
+            style={[
+              headerButtonStyle,
+              showExpiring && { backgroundColor: isDarkMode ? '#ef5350' : '#ff7043' }
+            ]}
+            onPress={() => setShowExpiring(!showExpiring)}
+          >
+            <MaterialIcons 
+              name="warning" 
+              size={24} 
+              color="#FFF" 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={headerButtonStyle}
+            onPress={() => navigation.navigate('AddProductScreen')}
+          >
+            <MaterialIcons name="add" size={24} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+      ),
     });
-  }, [navigation, isDarkMode]);
+  }, [navigation, isDarkMode, showExpiring]);
 
   const handleDeleteProduct = (product) => {
     setProductToDelete(product);
@@ -115,60 +159,74 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
   };
 
   const filterAndSortProducts = useMemo(() => {
-    const normalizedSearchText = searchText.toLowerCase();
-    return products
+    const normalizedSearchText = searchText.toLowerCase().trim();
+    let filteredProducts = products;
+    
+    // Filtro de produtos próximos ao vencimento (30 dias)
+    if (showExpiring) {
+      filteredProducts = products.filter(product => {
+        const diasrestantes = calculatediasrestantes(product.validade);
+        return diasrestantes <= 30;
+      });
+    }
+    
+    if (!normalizedSearchText) {
+      return filteredProducts.sort((a, b) => new Date(a.validade) - new Date(b.validade));
+    }
+
+    return filteredProducts
       .filter((product) => {
         switch (filterType) {
           case 'descricao':
-            return product.descricao?.toLowerCase().includes(normalizedSearchText);
+            return product.descricao?.toLowerCase().includes(normalizedSearchText) ||
+                   product.lote?.toLowerCase().includes(normalizedSearchText);
           case 'codprod':
-            return product.codprod?.toLowerCase().includes(normalizedSearchText);
+            const codprod = product.codprod?.toString().toLowerCase();
+            return codprod?.includes(normalizedSearchText);
           case 'codauxiliar':
-            return product.codauxiliar?.toLowerCase().includes(normalizedSearchText);
+            const codauxiliar = product.codauxiliar?.toString().toLowerCase();
+            return codauxiliar?.includes(normalizedSearchText);
           default:
             return false;
         }
       })
-      .sort((a, b) => new Date(a.validade) - new Date(b.validade));
-  }, [products, searchText, filterType]);
+      .sort((a, b) => {
+        // Primeiro ordena por correspondência exata
+        const aMatch = a[filterType]?.toString().toLowerCase() === normalizedSearchText;
+        const bMatch = b[filterType]?.toString().toLowerCase() === normalizedSearchText;
+        if (aMatch && !bMatch) return -1;
+        if (!aMatch && bMatch) return 1;
+        
+        // Depois ordena por data de validade
+        return new Date(a.validade) - new Date(b.validade);
+      });
+  }, [products, searchText, filterType, showExpiring]);
 
   const debouncedSearch = debounce((text) => setSearchText(text), 300);
 
   const renderProductItem = ({ item }) => {
     const diasrestantes = calculatediasrestantes(item.validade);
-  
-    const animatedStyle = new Animated.Value(1);
-  
-    const onSwipeStart = () => {
-      Animated.timing(animatedStyle, {
-        toValue: 0.95,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+    let row = [];
+    let prevOpenedRow;
+
+    const closeRow = (index) => {
+      if (prevOpenedRow && prevOpenedRow !== row[index]) {
+        prevOpenedRow.close();
+      }
+      prevOpenedRow = row[index];
     };
-  
-    const onSwipeEnd = () => {
-      Animated.timing(animatedStyle, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    };
-  
+
     return (
       <Swipeable
-        renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}  
-        onSwipeableOpen={onSwipeStart}
-        onSwipeableClose={onSwipeEnd}
-        style={styles.swipeable}
+        ref={ref => row[item.id] = ref}
+        renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
+        rightThreshold={40}
+        overshootRight={false}
+        onSwipeableOpen={() => closeRow(item.id)}
+        friction={2}
+        useNativeAnimations
       >
-        <Animated.View
-          style={[
-            styles.productItem,
-            isDarkMode && styles.darkProductItem,
-            { transform: [{ scale: animatedStyle }] },
-          ]}
-        >
+        <Animated.View style={[styles.productItem, isDarkMode && styles.darkProductItem]}>
           <ProductItem
             product={{
               ...item,
@@ -182,43 +240,77 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
     );
   };
   
-  const renderRightActions = (progress, dragX, item) => {  // Adicionando o parâmetro item
-    const scale = dragX.interpolate({
-      inputRange: [-100, 0],
-      outputRange: [1, 0.7], // Reduz o tamanho até 70%
+  const renderRightActions = (progress, dragX, item) => {
+    // Animação de entrada dos botões com efeito elástico
+    const bounceAnim = progress.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [100, 10, 0],
       extrapolate: 'clamp',
     });
-  
+
+    // Animação de escala com efeito bounce
+    const scale = progress.interpolate({
+      inputRange: [0, 0.5, 0.8, 1],
+      outputRange: [0.5, 1.1, 0.9, 1],
+      extrapolate: 'clamp',
+    });
+
+    // Animação de opacidade
     const opacity = progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.3, 1], // Aumenta a opacidade gradualmente
-      extrapolate: 'clamp',
+      inputRange: [0, 0.5, 1],
+      outputRange: [0, 0.3, 1],
     });
-  
+
     return (
-      <Animated.View
-        style={[
-          styles.actionsContainer,
-          { transform: [{ scale }], opacity },
-        ]}
-      >
-        <TouchableOpacity onPress={() => handleEditProduct(item)} style={styles.editAction}>
-          <Image
-            source={require('../../assets/Listpng/Editar.png')}
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDeleteProduct(item)} style={styles.deleteAction}>
-          <Image
-            source={require('../../assets/Listpng/Excluir.png')}
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-      </Animated.View>
+      <View style={styles.actionsContainer}>
+        <Animated.View 
+          style={[
+            styles.actionsWrapper,
+            {
+              transform: [
+                { translateX: bounceAnim },
+                { scale }
+              ],
+              opacity,
+            }
+          ]}
+        >
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.editButton]}
+            onPress={() => handleEditProduct(item)}
+          >
+            <View style={styles.actionButtonContent}>
+              <MaterialIcons 
+                name="edit" 
+                size={28} 
+                color="#fff"
+                style={styles.actionIcon} 
+              />
+              <Text style={styles.actionButtonText}>Editar</Text>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.deleteButton]}
+            onPress={() => handleDeleteProduct(item)}
+          >
+            <View style={styles.actionButtonContent}>
+              <MaterialIcons 
+                name="delete-forever"
+                size={30} 
+                color="#fff"
+                style={styles.actionIcon}
+              />
+              <Text style={styles.actionButtonText}>Excluir</Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
     );
   };
 
   const toggleFilter = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsFilterVisible((prev) => !prev);
   };
 
@@ -227,31 +319,99 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
     setIsFilterVisible(false);
   };
 
+  const renderEmptyList = () => (
+    <View style={styles.emptyList}>
+      <Text style={[styles.emptyText, isDarkMode && styles.darkEmptyText]}>
+        Nenhum produto encontrado.{'\n'}
+        Adicione produtos para começar!
+      </Text>
+    </View>
+  );
+
+  const FilterOption = ({ label, icon, isSelected, onPress }) => (
+    <TouchableOpacity 
+      style={[
+        styles.filterOption,
+        isSelected && styles.filterOptionSelected,
+        isDarkMode && styles.darkFilterOption,
+        isSelected && isDarkMode && styles.darkFilterOptionSelected
+      ]} 
+      onPress={onPress}
+    >
+      <MaterialIcons 
+        name={icon} 
+        size={20} 
+        color={isSelected ? '#fff' : (isDarkMode ? '#fff' : '#666')} 
+      />
+      <Text style={[
+        styles.optionText,
+        isSelected && styles.optionTextSelected,
+        isDarkMode && styles.darkOptionText
+      ]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const getPlaceholderText = () => {
+    switch (filterType) {
+      case 'descricao':
+        return 'Buscar por nome ou lote do produto...';
+      case 'codprod':
+        return 'Buscar por código interno...';
+      case 'codauxiliar':
+        return 'Buscar por código de barras...';
+      default:
+        return 'Buscar produto...';
+    }
+  };
+
   return (
     <View style={[styles.container, isDarkMode && styles.darkBackground]}>
-      <View style={styles.searchContainer}>
-        <TouchableOpacity style={[styles.filterButton, isDarkMode && styles.darkFilterButton]} onPress={toggleFilter}>
-          <Text style={styles.filterText}>{filterType.charAt(0).toUpperCase() + filterType.slice(1)}</Text>
-        </TouchableOpacity>
+      <View style={styles.searchWrapper}>
+        <View style={[styles.searchContainer, isDarkMode && styles.darkSearchContainer]}>
+          <TouchableOpacity 
+            style={[styles.filterButton, isDarkMode && styles.darkFilterButton]} 
+            onPress={toggleFilter}
+          >
+            <MaterialIcons name="filter-list" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <TextInput
+            style={[styles.searchInput, isDarkMode && styles.darkSearchInput]}
+            placeholder={getPlaceholderText()}
+            placeholderTextColor={isDarkMode ? '#666' : '#888'}
+            onChangeText={debouncedSearch}
+          />
+        </View>
+        
         {isFilterVisible && (
-          <View style={[styles.filterOptions, isDarkMode && styles.darkFilterOptions]}>
-            <TouchableOpacity onPress={() => setSelectedFilter('descricao')}>
-              <Text style={[styles.optionText, styles.lastOptionText]}>Nome</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setSelectedFilter('codprod')}>
-              <Text style={styles.optionText}>Código Interno</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setSelectedFilter('codauxiliar')}>
-              <Text style={styles.optionText}>Código de barras</Text>
-            </TouchableOpacity>
-          </View>
+          <Animated.View style={[styles.filterOptions, isDarkMode && styles.darkFilterOptions]}>
+            <FilterOption
+              label="Nome"
+              icon="text-fields"
+              isSelected={filterType === 'descricao'}
+              onPress={() => setSelectedFilter('descricao')}
+            />
+            <FilterOption
+              label="Código Interno"
+              icon="code"
+              isSelected={filterType === 'codprod'}
+              onPress={() => setSelectedFilter('codprod')}
+            />
+            <FilterOption
+              label="Código de barras"
+              icon="qr-code"
+              isSelected={filterType === 'codauxiliar'}
+              onPress={() => setSelectedFilter('codauxiliar')}
+            />
+          </Animated.View>
         )}
-        <TextInput
-          style={[styles.searchInput, isDarkMode && styles.darkSearchInput]}
-          placeholder={`Pesquisar produto por ${filterType}`}
-          placeholderTextColor="#888"
-          onChangeText={debouncedSearch}
-        />
+      </View>
+      <View style={styles.statsContainer}>
+        <Text style={[styles.statsText, isDarkMode && styles.darkStatsText]}>
+          {filterAndSortProducts.length} {filterAndSortProducts.length === 1 ? 'item' : 'itens'}
+          {showExpiring ? ' próximos ao vencimento' : ''}
+        </Text>
       </View>
       {loading ? (
         <ActivityIndicator size="large" color="#0077ed" style={styles.loadingIndicator} />
@@ -260,7 +420,17 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
           data={filterAndSortProducts}
           renderItem={renderProductItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={[
+            filterAndSortProducts.length === 0 ? { flex: 1 } : { paddingBottom: 20 },
+            { paddingTop: 8 }
+          ]}
+          ListEmptyComponent={renderEmptyList}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          onScrollBeginDrag={() => setIsFilterVisible(false)}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         />
       )}
       <AlertDialog
@@ -278,111 +448,208 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 18,
-    backgroundColor: '#F2F2F2',
+    padding: 12,
+    backgroundColor: '#F5F5F5',
   },
   darkBackground: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#121212',
+  },
+  searchWrapper: {
+    zIndex: 999,
+    marginBottom: 12,
+    position: 'relative',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  darkSearchContainer: {
+    backgroundColor: '#2e2e2e',
+    borderColor: '#444',
   },
   filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#0077ed',
-    padding: 10,
-    borderRadius: 10,
-    marginRight: 10,
-    zIndex: 1,
+    padding: 8,
+    borderRadius: 8,
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   darkFilterButton: {
-    backgroundColor: '#3b3b3b',
+    backgroundColor: '#1e88e5',
   },
   filterText: {
     color: '#FFFFFF',
-    marginLeft: 2,
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
   },
   searchInput: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    color: '#333',
   },
   darkSearchInput: {
-    backgroundColor: '#444',
     color: '#fff',
+    backgroundColor: 'transparent',
   },
   loadingIndicator: {
     marginTop: 20,
   },
   productItem: {
-    flexDirection: 'row',
     backgroundColor: '#fff',
     borderRadius: 10,
-    marginBottom: 10,
-    alignItems: 'center',
-    position: 'relative',
+    marginVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   darkProductItem: {
     backgroundColor: '#333',
   },
-  actionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 0,
-    paddingBottom: 8,
-    marginRight: 0,
-  },
-  editAction: {
-    backgroundColor: '#a1b3b2',
-    paddingVertical: 70, // Aumenta a altura do botão
-    paddingHorizontal: 25, // Mantém o padding horizontal
-    borderRadius: 10,
-    marginRight: 8,
-  },
-  
-  deleteAction: {
-    backgroundColor: '#e63032',
-    paddingVertical: 70, // Aumenta a altura do botão
-    paddingHorizontal: 25, // Mantém o padding horizontal
-    borderRadius: 10,
-    marginRight: 2,
-  },
   filterOptions: {
     position: 'absolute',
-    top: 40,
+    top: '100%',
     left: 0,
+    right: 0,
     backgroundColor: '#fff',
-    width: 250,
-    padding: 10,
-    borderRadius: 8,
-    boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
-    zIndex: 999,
+    borderRadius: 12,
+    marginTop: 8,
+    padding: 8,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    zIndex: 1000,
   },
   darkFilterOptions: {
-    backgroundColor: '#444',
+    backgroundColor: '#2e2e2e',
+    borderColor: '#444',
+  },
+  filterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 4,
+  },
+  filterOptionSelected: {
+    backgroundColor: '#0077ed',
+  },
+  darkFilterOption: {
+    borderColor: '#444',
+  },
+  darkFilterOptionSelected: {
+    backgroundColor: '#1e88e5',
   },
   optionText: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    marginLeft: 12,
+    fontSize: 15,
+    color: '#666',
+    fontWeight: '500',
+  },
+  optionTextSelected: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  darkOptionText: {
+    color: '#fff',
+  },
+  swipeable: {
+    marginBottom: 8,
+  },
+  actionsContainer: {
+    width: 180,
+    height: '100%',
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    marginRight: 10,
+  },
+  actionsWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingVertical: 6,
+  },
+  actionButton: {
+    width: 80,
+    height: '94%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    marginHorizontal: 4,
+    elevation: 3,
+  },
+  actionButtonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  actionIcon: {
+    marginBottom: 4,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  editButton: {
+    backgroundColor: '#1976D2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  deleteButton: {
+    backgroundColor: '#D32F2F',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  emptyList: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
     fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 10,
   },
-  lastOptionText: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+  darkEmptyText: {
+    color: '#999',
   },
-  icon: {
-    width: 24,  // Ajuste o tamanho da imagem
-    height: 24, // Ajuste o tamanho da imagem
-    resizeMode: 'contain', // Faz com que a imagem se ajuste sem distorção
-  }
+  statsContainer: {
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statsText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  darkStatsText: {
+    color: '#aaa',
+  },
 });
 
 export default ListScreen;
