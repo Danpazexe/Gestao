@@ -4,6 +4,8 @@ import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar, Appearance } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from './Screen/Components/toastConfig';
 
 // Importações de telas
 import EntryScreen from './Screen/Entrada/EntryScreen';
@@ -92,6 +94,7 @@ export default function App() {
           )}
         </Stack.Screen>
       </Stack.Navigator>
+      <Toast config={toastConfig} />
     </NavigationContainer>
   );
 }

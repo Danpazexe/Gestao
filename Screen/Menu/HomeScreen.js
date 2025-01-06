@@ -1,22 +1,12 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
 import LottieView from "lottie-react-native";
+import { useNavigation } from "@react-navigation/native";
 
 const HomeScreen = ({ isDarkMode }) => {
   const navigation = useNavigation();
 
-  useEffect(() => {
-    console.log("HomeScreen carregada.");
-    navigation.setOptions({ headerShown: false });
-  }, [navigation]);
-
-  const handleNavigation = (screen) => {
-    console.log(`Navegando para: ${screen}`);
-    navigation.navigate(screen);
-  };
-
-  const cards = [
+  const buttons = [
     {
       title: "Ver Lista",
       screen: "ListScreen",
@@ -75,42 +65,93 @@ const HomeScreen = ({ isDarkMode }) => {
     },
   ];
 
+  const [pressedButton, setPressedButton] = useState(null);
+  const [buttonAnimations] = useState(
+    buttons.map(() => new Animated.Value(0))
+  );
+
+  useEffect(() => {
+    console.log("HomeScreen carregada.");
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+  const handleNavigation = (screen) => {
+    console.log(`Navegando para: ${screen}`);
+    navigation.navigate(screen);
+  };
+
+  const handlePressIn = (index) => {
+    setPressedButton(index);
+    Animated.spring(buttonAnimations[index], {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 12,
+      bounciness: 8,
+    }).start();
+  };
+
+  const handlePressOut = (index) => {
+    setPressedButton(null);
+    Animated.spring(buttonAnimations[index], {
+      toValue: 0,
+      useNativeDriver: true,
+      speed: 12,
+      bounciness: 8,
+    }).start();
+  };
+
   return (
     <View
-      style={[
-        styles.container,
-        isDarkMode ? styles.darkBackground : styles.lightBackground,
-      ]}
+      style={[styles.container, isDarkMode ? styles.darkBackground : styles.lightBackground]}
     >
-      <Text
-        style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}
-      >
+      <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
         Menu
       </Text>
       <View style={styles.gridContainer}>
-        {cards.map((card, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.card,
+        {buttons.map((button, index) => {
+          const animatedStyle = {
+            transform: [
               {
-                backgroundColor: isDarkMode
-                  ? card.colorDark
-                  : card.colorLight,
+                scale: buttonAnimations[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0.95],
+                }),
               },
-            ]}
-            onPress={() => card.screen && handleNavigation(card.screen)}
-          >
-            <LottieView
-              source={card.animation}
-              style={styles.icon}
-              autoPlay
-              loop
-              speed={0.3}
-            />
-            <Text style={styles.cardTitle}>{card.title}</Text>
-          </TouchableOpacity>
-        ))}
+              {
+                translateY: buttonAnimations[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 4],
+                }),
+              },
+            ],
+          };
+
+          return (
+            <Animated.View key={index} style={[styles.cardContainer, animatedStyle]}>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  {
+                    backgroundColor: isDarkMode ? button.colorDark : button.colorLight,
+                  },
+                ]}
+                onPressIn={() => handlePressIn(index)}
+                onPressOut={() => handlePressOut(index)}
+                onPress={() => button.screen && handleNavigation(button.screen)}
+                activeOpacity={0.9}
+              >
+                <LottieView
+                  source={button.animation}
+                  style={styles.icon}
+                  autoPlay
+                  loop
+                  speed={0.3}
+                />
+                <Text style={styles.buttonTitle}>{button.title}</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        })}
       </View>
     </View>
   );
@@ -120,7 +161,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 25,
-    position: 'relative',
+    position: "relative",
   },
   darkBackground: {
     backgroundColor: "#181818",
@@ -145,25 +186,42 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
   },
-  card: {
+  cardContainer: {
+    marginBottom: 16,
     width: "45%",
-    margin: 6,
-    borderRadius: 25,
-    elevation: 8,
-    padding: 20,
+    marginHorizontal: "2.5%",
+  },
+  button: {
+    backgroundColor: "#F0F0F0",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.5)",
   },
   icon: {
     width: 50,
     height: 50,
     marginBottom: 5,
   },
-  cardTitle: {
+  buttonTitle: {
     fontSize: 16,
     color: "#fafafa",
     textAlign: "center",
     fontWeight: "bold",
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
 
