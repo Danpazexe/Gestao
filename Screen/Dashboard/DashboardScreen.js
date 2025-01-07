@@ -13,12 +13,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LineChart, PieChart } from 'react-native-chart-kit';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { Menu } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 
-const DashboardScreen = ({ isDarkMode }) => {
+const DashboardScreen = ({ isDarkMode, navigation }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('30'); // '7', '30', '90' dias
+  const [menuVisible, setMenuVisible] = useState(false);
 
   // Função para carregar produtos
   const loadProducts = async () => {
@@ -44,6 +49,35 @@ const DashboardScreen = ({ isDarkMode }) => {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: 'Dashboard',
+      headerStyle: {
+        backgroundColor: isDarkMode ? '#2e2e2e' : '#C42D2F',
+      },
+      headerTintColor: '#FFFFFF',
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', marginRight: 10 }}>
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <TouchableOpacity onPress={() => setMenuVisible(true)}>
+                <MaterialIcons name="more-vert" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            }
+          >
+            <Menu.Item 
+              onPress={exportToPDF} 
+              title="Exportar PDF"
+              leadingIcon="file-pdf-box"
+            />
+          </Menu>
+        </View>
+      ),
+    });
+  }, [menuVisible, isDarkMode]);
 
   // Função para calcular dias restantes
   const calculateDaysRemaining = (expirationDate) => {
@@ -181,6 +215,80 @@ const DashboardScreen = ({ isDarkMode }) => {
     </TouchableOpacity>
   );
 
+  const generatePDFContent = () => {
+    const pieData = getPieChartData();
+    const stats = [
+      { label: 'Total de Produtos', value: products.length },
+      { label: 'Próximos ao Vencimento', value: products.filter(p => {
+        const days = calculateDaysRemaining(p.validade);
+        return !p.status && days > 0 && days <= 30;
+      }).length },
+      { label: 'Vencidos', value: products.filter(p => p.status === 'treated' && p.treatmentType === 'expired').length },
+      { label: 'Vendidos', value: products.filter(p => p.status === 'treated' && p.treatmentType === 'sold').length },
+      { label: 'Trocados', value: products.filter(p => p.status === 'treated' && p.treatmentType === 'exchanged').length },
+      { label: 'Devolvidos', value: products.filter(p => p.status === 'treated' && p.treatmentType === 'returned').length }
+    ];
+
+    const statsHtml = stats.map(stat => `
+      <div style="margin: 10px 0;">
+        <strong>${stat.label}:</strong> ${stat.value}
+      </div>
+    `).join('');
+
+    const distributionHtml = pieData.map(item => `
+      <div style="margin: 5px 0;">
+        <span style="color: ${item.color};">■</span> ${item.name}: ${item.population}
+      </div>
+    `).join('');
+
+    return `
+      <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+          <h1 style="color: #0077ed; text-align: center;">Relatório do Dashboard</h1>
+          <p style="text-align: center;">Data do relatório: ${new Date().toLocaleDateString('pt-BR')}</p>
+          
+          <div style="margin: 20px 0;">
+            <h2>Estatísticas Gerais</h2>
+            ${statsHtml}
+          </div>
+
+          <div style="margin: 20px 0;">
+            <h2>Distribuição por Status</h2>
+            ${distributionHtml}
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  const exportToPDF = async () => {
+    try {
+      const html = generatePDFContent();
+      const { uri } = await Print.printToFileAsync({
+        html,
+        base64: false
+      });
+      
+      if (!(await Sharing.isAvailableAsync())) {
+        Toast.show({
+          type: 'error',
+          text1: 'Compartilhamento não disponível',
+          text2: 'Seu dispositivo não suporta compartilhamento'
+        });
+        return;
+      }
+
+      await Sharing.shareAsync(uri);
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao exportar PDF',
+        text2: 'Tente novamente mais tarde'
+      });
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
@@ -197,7 +305,7 @@ const DashboardScreen = ({ isDarkMode }) => {
       }
     >
       <LinearGradient
-        colors={isDarkMode ? ['#1A237E', '#303F9F'] : ['#3F51B5', '#5C6BC0']}
+        colors={isDarkMode ? ['#C42D2F', '#C42D2F'] : ['#C42D2f', '#C42D2F']}
         style={styles.header}
       >
         <Text style={styles.headerTitle}>Dashboard</Text>

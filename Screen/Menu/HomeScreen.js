@@ -1,67 +1,70 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, SafeAreaView, Dimensions, BackHandler, ToastAndroid, Platform, Alert } from "react-native";
 import LottieView from "lottie-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from '@expo/vector-icons';
 
 const HomeScreen = ({ isDarkMode }) => {
   const navigation = useNavigation();
+  const fadeAnim = new Animated.Value(0);
+  const translateY = new Animated.Value(50);
+  const [lastBackPress, setLastBackPress] = useState(0);
 
   const [buttons] = useState([
     {
-      title: "Ver Lista",
+      title: "Lista",
       screen: "ListScreen",
-      colorDark: "#0077ed",
-      colorLight: "#0077ed",
+      colorDark: "#1E3A8A",
+      colorLight: "#2563EB",
       animation: require("../../assets/GifMenu/VerLista.json"),
     },
     {
-      title: "Add Produto",
+      title: "Adicionar",
       screen: "AddProductScreen",
-      colorDark: "#4A7042",
-      colorLight: "#5d7e62",
+      colorDark: "#065F46",
+      colorLight: "#059669",
       animation: require("../../assets/GifMenu/AddProd.json"),
     },
     {
       title: "Dashboard",
       screen: "DashboardScreen",
-      colorDark: "#C42D2F",
-      colorLight: "#d9434f",
+      colorDark: "#991B1B",
+      colorLight: "#DC2626",
       animation: require("../../assets/GifMenu/Dash.json"),
     },
     {
       title: "Tratativas",
       screen: "TratarScreen",
-      colorDark: "#FF8C00",
-      colorLight: "#FFA500",
+      colorDark: "#92400E",
+      colorLight: "#D97706",
       animation: require("../../assets/GifMenu/Tratar.json"),
     },
     {
-      title: "Export/Import",
+      title: "Excel",
       screen: "ExcelScreen",
-      colorDark: "#012677",
-      colorLight: "#294380",
+      colorDark: "#1E40AF",
+      colorLight: "#3B82F6",
       animation: require("../../assets/GifMenu/Excel.json"),
     },
     {
       title: "Perfil",
       screen: "ProfileScreen",
-      colorDark: "#A69C68",
-      colorLight: "#83764c",
+      colorDark: "#5B21B6",
+      colorLight: "#7C3AED",
       animation: require("../../assets/GifMenu/Profile.json"),
     },
     {
-      title: "Configurações",
+      title: "Config",
       screen: "SettingsScreen",
-      colorDark: "#3A7F7F",
-      colorLight: "#6cb6a5",
+      colorDark: "#374151",
+      colorLight: "#4B5563",
       animation: require("../../assets/GifMenu/Config.json"),
     },
     {
       title: "SQL",
-      screen: "JsonScreen",
-      colorDark: "#b2bfdd",
-      colorLight: "#7376a9",
+      screen: null,
+      colorDark: "#0F766E",
+      colorLight: "#0D9488",
       animation: require("../../assets/GifMenu/Bd.json"),
     },
     {
@@ -74,18 +77,83 @@ const HomeScreen = ({ isDarkMode }) => {
   ]);
 
   const [pressedButton, setPressedButton] = useState(null);
-  const [buttonAnimations, setButtonAnimations] = useState(() => 
-    Array(buttons.length).fill(0).map(() => new Animated.Value(0))
+  const [buttonAnimations] = useState(() => 
+    buttons.map(() => ({
+      opacity: new Animated.Value(0),
+      translateY: new Animated.Value(50),
+      scale: new Animated.Value(1)
+    }))
   );
 
   useEffect(() => {
     console.log("HomeScreen carregada.");
     navigation.setOptions({ headerShown: false });
-  }, [navigation]);
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      })
+    ]).start();
+
+    const animations = buttonAnimations.map((anim, index) => {
+      return Animated.parallel([
+        Animated.timing(anim.opacity, {
+          toValue: 1,
+          duration: 500,
+          delay: index * 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.translateY, {
+          toValue: 0,
+          duration: 500,
+          delay: index * 100,
+          useNativeDriver: true,
+        })
+      ]);
+    });
+
+    Animated.stagger(50, animations).start();
+  }, []);
 
   useEffect(() => {
-    setButtonAnimations(Array(buttons.length).fill(0).map(() => new Animated.Value(0)));
-  }, [buttons.length]);
+    const backAction = () => {
+      const currentTime = new Date().getTime();
+      
+      if (currentTime - lastBackPress < 2000) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      setLastBackPress(currentTime);
+      
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('Pressione voltar novamente para sair', ToastAndroid.SHORT);
+      } else {
+        Alert.alert(
+          'Sair do App',
+          'Pressione voltar novamente para sair',
+          [{ text: 'OK' }],
+          { cancelable: false }
+        );
+      }
+      
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [lastBackPress]);
 
   const handleNavigation = (screen) => {
     console.log(`Navegando para: ${screen}`);
@@ -94,163 +162,180 @@ const HomeScreen = ({ isDarkMode }) => {
 
   const handlePressIn = (index) => {
     setPressedButton(index);
-    Animated.spring(buttonAnimations[index], {
-      toValue: 1,
+    Animated.spring(buttonAnimations[index].scale, {
+      toValue: 0.95,
       useNativeDriver: true,
-      speed: 12,
-      bounciness: 8,
+      speed: 20,
+      bounciness: 4,
     }).start();
   };
 
   const handlePressOut = (index) => {
     setPressedButton(null);
-    Animated.spring(buttonAnimations[index], {
-      toValue: 0,
+    Animated.spring(buttonAnimations[index].scale, {
+      toValue: 1,
       useNativeDriver: true,
-      speed: 12,
-      bounciness: 8,
+      speed: 20,
+      bounciness: 4,
     }).start();
   };
 
-  return (
-    <View
-      style={[styles.container, isDarkMode ? styles.darkBackground : styles.lightBackground]}
-    >
-      <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
-        Menu
-      </Text>
-      <View style={styles.gridContainer}>
-        {buttons.map((button, index) => {
-          const animatedStyle = {
-            transform: [
-              {
-                scale: buttonAnimations[index].interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 0.95],
-                }),
-              },
-              {
-                translateY: buttonAnimations[index].interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 4],
-                }),
-              },
-            ],
-          };
+  const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollViewContent: {
+      padding: 16,
+    },
+    container: {
+      flex: 1,
+      padding: 16,
+      position: "relative",
+    },
+    darkBackground: {
+      backgroundColor: "#111827",
+    },
+    lightBackground: {
+      backgroundColor: "#F3F4F6",
+    },
+    darkText: {
+      color: "#EAEAEA",
+    },
+    lightText: {
+      color: "rgb(48, 48, 48)",
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: "700",
+      textAlign: "center",
+      marginVertical: 24,
+    },
+    gridContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      paddingHorizontal: 8,
+    },
+    cardContainer: {
+      width: '46%',
+      aspectRatio: 1,
+      marginBottom: 16,
+      marginHorizontal: '2%',
+    },
+    button: {
+      flex: 1,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    icon: {
+      width: 50,
+      height: 50,
+      marginBottom: 12,
+    },
+    buttonTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: "#FFFFFF",
+      textAlign: "center",
+      textShadowColor: 'rgba(0, 0, 0, 0.3)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
+      borderRadius: 16,
+      backgroundColor: '#F0F0F0',
+      marginBottom: 16,
+    },
+    darkMenuItem: {
+      backgroundColor: '#333',
+    },
+    menuItemText: {
+      marginLeft: 12,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
 
-          return (
-            <Animated.View key={index} style={[styles.cardContainer, animatedStyle]}>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  {
-                    backgroundColor: isDarkMode ? button.colorDark : button.colorLight,
-                  },
-                ]}
-                onPressIn={() => handlePressIn(index)}
-                onPressOut={() => handlePressOut(index)}
-                onPress={() => button.screen && handleNavigation(button.screen)}
-                activeOpacity={0.9}
+  return (
+    <SafeAreaView 
+      style={[styles.safeArea, isDarkMode ? styles.darkBackground : styles.lightBackground]}
+    >
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollViewContent}
+      >
+        <Animated.Text 
+          style={[
+            styles.title, 
+            isDarkMode ? styles.darkText : styles.lightText,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY }]
+            }
+          ]}
+        >
+          Menu
+        </Animated.Text>
+        <View style={styles.gridContainer}>
+          {buttons.map((button, index) => {
+            const animatedStyle = {
+              opacity: buttonAnimations[index].opacity,
+              transform: [
+                { translateY: buttonAnimations[index].translateY },
+                { scale: buttonAnimations[index].scale }
+              ]
+            };
+
+            return (
+              <Animated.View 
+                key={index} 
+                style={[styles.cardContainer, animatedStyle]}
               >
-                <LottieView
-                  source={button.animation}
-                  style={styles.icon}
-                  autoPlay
-                  loop
-                  speed={0.5}
-                />
-                <Text style={styles.buttonTitle}>{button.title}</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          );
-        })}
-      </View>
-    </View>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    {
+                      backgroundColor: isDarkMode ? button.colorDark : button.colorLight,
+                    },
+                  ]}
+                  onPressIn={() => handlePressIn(index)}
+                  onPressOut={() => handlePressOut(index)}
+                  onPress={() => button.screen && handleNavigation(button.screen)}
+                  activeOpacity={0.7}
+                >
+                  <LottieView
+                    source={button.animation}
+                    style={styles.icon}
+                    autoPlay
+                    loop
+                    speed={0.5}
+                  />
+                  <Text style={styles.buttonTitle}>{button.title}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 25,
-    position: "relative",
-  },
-  darkBackground: {
-    backgroundColor: "#181818",
-  },
-  lightBackground: {
-    backgroundColor: "#ffffff",
-  },
-  darkText: {
-    color: "#EAEAEA",
-  },
-  lightText: {
-    color: "rgb(48, 48, 48)",
-  },
-  title: {
-    fontSize: 46,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  gridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-  cardContainer: {
-    marginBottom: 16,
-    width: "45%",
-    marginHorizontal: "2.5%",
-  },
-  button: {
-    backgroundColor: "#F0F0F0",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.5)",
-  },
-  icon: {
-    width: 50,
-    height: 50,
-    marginBottom: 5,
-  },
-  buttonTitle: {
-    fontSize: 16,
-    color: "#fafafa",
-    textAlign: "center",
-    fontWeight: "bold",
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
-    marginBottom: 16,
-  },
-  darkMenuItem: {
-    backgroundColor: '#333',
-  },
-  menuItemText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
 
 export default HomeScreen;
