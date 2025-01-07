@@ -17,7 +17,6 @@ import { Audio } from 'expo-av';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Brightness from 'expo-brightness';
 import Toast from 'react-native-toast-message';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -30,7 +29,6 @@ const BarcodeScannerScreen = ({ navigation }) => {
   const [sound, setSound] = useState();
   const [barcodeData, setBarcodeData] = useState('');
   const [scanLineAnim] = useState(new Animated.Value(0));
-  const [originalBrightness, setOriginalBrightness] = useState(null);
   const cameraRef = useRef(null);
 
   const startScanLineAnimation = () => {
@@ -53,7 +51,6 @@ const BarcodeScannerScreen = ({ navigation }) => {
   useEffect(() => {
     setupScanner();
     startScanLineAnimation();
-    setupBrightness();
     setupBackHandler();
 
     return () => {
@@ -79,18 +76,7 @@ const BarcodeScannerScreen = ({ navigation }) => {
     return () => backHandler.remove();
   };
 
-  const setupBrightness = async () => {
-    try {
-      const { status } = await Brightness.requestPermissionsAsync();
-      if (status === 'granted') {
-        const brightness = await Brightness.getBrightnessAsync();
-        setOriginalBrightness(brightness);
-        await Brightness.setBrightnessAsync(Math.max(brightness, 0.7));
-      }
-    } catch (error) {
-      console.log('Erro ao ajustar brilho:', error);
-    }
-  };
+  
 
   const setupScanner = async () => {
     try {
@@ -98,8 +84,6 @@ const BarcodeScannerScreen = ({ navigation }) => {
       setHasPermission(status === 'granted');
       if (status === 'granted') {
         await loadSound();
-        // Aumenta o brilho da tela ao iniciar o scanner
-        await setupBrightness();
       }
     } catch (error) {
       Toast.show({
@@ -113,10 +97,6 @@ const BarcodeScannerScreen = ({ navigation }) => {
   const cleanupResources = async () => {
     if (sound) {
       await sound.unloadAsync();
-    }
-    // Restaura o brilho original
-    if (originalBrightness !== null) {
-      await Brightness.setBrightnessAsync(originalBrightness);
     }
   };
 
