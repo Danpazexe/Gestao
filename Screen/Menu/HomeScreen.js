@@ -42,8 +42,8 @@ const HomeScreen = ({ isDarkMode }) => {
     {
       title: "Excel",
       screen: "ExcelScreen",
-      colorDark: "#1E40AF",
-      colorLight: "#3B82F6",
+      colorDark: "#294380",
+      colorLight: "#012677",
       animation: require("../../assets/GifMenu/Excel.json"),
     },
     {

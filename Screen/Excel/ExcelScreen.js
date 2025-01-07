@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Alert, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Alert, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as XLSX from 'xlsx';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialIcons } from '@expo/vector-icons';
 
 // Paleta de cores
 const colors = {
@@ -115,14 +116,55 @@ const ExcelScreen = ({ navigation, isDarkMode }) => {
         <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
       ) : (
         <>
-          <Text style={[styles.title, { color: isDarkMode ? colors.textDark : colors.textLight }]}>Gerenciamento de Produtos</Text>
+          <View style={styles.header}>
+            <MaterialIcons 
+              name="table-chart" 
+              size={40} 
+              color={isDarkMode ? colors.textDark : colors.textLight} 
+            />
+            <Text style={[styles.title, { color: isDarkMode ? colors.textDark : colors.textLight }]}>
+              Gerenciamento de Dados
+            </Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={[styles.infoText, { color: isDarkMode ? colors.textDark : colors.textLight }]}>
+              Total de Produtos Cadastrados
+            </Text>
+            <Text style={[styles.infoNumber, { color: isDarkMode ? colors.textDark : colors.textLight }]}>
+              {productsCount}
+            </Text>
+          </View>
+
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, { backgroundColor: colors.success }]} onPress={exportToExcel} disabled={loading}>
-              <Text style={styles.buttonText}>Exportar para Excel</Text>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: colors.success }]} 
+              onPress={exportToExcel} 
+              disabled={loading}
+            >
+              <MaterialIcons name="file-download" size={24} color={colors.white} />
+              <View style={styles.buttonTextContainer}>
+                <Text style={styles.buttonText}>Exportar para Excel</Text>
+                <Text style={styles.buttonSubtext}>Salvar produtos em planilha</Text>
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, { backgroundColor: colors.import }]} onPress={importFromExcel}>
-              <Text style={styles.buttonText}>Importar do Excel</Text>
+
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: colors.import }]} 
+              onPress={importFromExcel}
+            >
+              <MaterialIcons name="file-upload" size={24} color={colors.white} />
+              <View style={styles.buttonTextContainer}>
+                <Text style={styles.buttonText}>Importar do Excel</Text>
+                <Text style={styles.buttonSubtext}>Carregar produtos de planilha</Text>
+              </View>
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: isDarkMode ? colors.textDark : colors.textLight }]}>
+              Formatos suportados: .xlsx
+            </Text>
           </View>
         </>
       )}
@@ -134,43 +176,86 @@ const ExcelScreen = ({ navigation, isDarkMode }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    width: '100%',
+  header: {
     alignItems: 'center',
-    paddingHorizontal: 16,
+    marginBottom: 30,
+    marginTop: 20,
   },
-  button: {
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 8,
-    marginBottom: 20,
-    elevation: 6,
-    width: '100%',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+  infoCard: {
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 30,
+    elevation: 1,
+    shadowColor: '#012677',
     shadowOffset: {
       width: 0,
       height: 2,
     },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  infoText: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  infoNumber: {
+    fontSize: 36,
+    fontWeight: 'bold',
+  },
+  buttonContainer: {
+    gap: 15,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  buttonTextContainer: {
+    marginLeft: 15,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 18,
     fontWeight: 'bold',
-    textAlign: 'center',
+  },
+  buttonSubtext: {
+    color: colors.white,
+    fontSize: 12,
+    opacity: 0.9,
+    marginTop: 2,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    opacity: 0.7,
   },
   loader: {
-    marginVertical: 20,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
