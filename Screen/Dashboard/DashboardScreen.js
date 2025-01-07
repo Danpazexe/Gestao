@@ -55,6 +55,15 @@ const DashboardScreen = ({ isDarkMode }) => {
 
   // Dados para o gráfico de pizza
   const getPieChartData = () => {
+    if (products.length === 0) {
+      return [{
+        name: 'Sem produtos',
+        population: 1,
+        color: isDarkMode ? '#A78BFA' : '#7C4DFF',
+        legendFontColor: isDarkMode ? '#E0E0E0' : '#333333',
+      }];
+    }
+
     const expired = products.filter(p => p.status === 'treated' && p.treatmentType === 'expired').length;
     const sold = products.filter(p => p.status === 'treated' && p.treatmentType === 'sold').length;
     const exchanged = products.filter(p => p.status === 'treated' && p.treatmentType === 'exchanged').length;
@@ -110,6 +119,17 @@ const DashboardScreen = ({ isDarkMode }) => {
 
   // Dados para o gráfico de linha
   const getLineChartData = () => {
+    if (products.length === 0) {
+      return {
+        labels: ['Sem dados'],
+        datasets: [{
+          data: [0],
+          color: (opacity = 1) => isDarkMode ? '#6366F1' : '#3F51B5',
+          strokeWidth: 2,
+        }],
+      };
+    }
+
     const sortedProducts = [...products]
       .sort((a, b) => calculateDaysRemaining(a.validade) - calculateDaysRemaining(b.validade))
       .slice(0, 5);
