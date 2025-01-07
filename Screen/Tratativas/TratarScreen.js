@@ -15,7 +15,7 @@ import { Menu, Provider } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import * as FileSystem from 'expo-file-system';
 
-const TreatedItemsScreen = ({ navigation, isDarkMode }) => {
+const TratarScreen = ({ navigation, isDarkMode }) => {
   const [treatedItems, setTreatedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -384,4 +384,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TreatedItemsScreen; 
+export default TratarScreen; 

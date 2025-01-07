@@ -31,7 +31,7 @@ const HomeScreen = ({ isDarkMode }) => {
     },
     {
       title: "Tratativas",
-      screen: "TreatedItemsScreen",
+      screen: "TratarScreen",
       colorDark: "#FF8C00",
       colorLight: "#FFA500",
       animation: require("../../assets/GifMenu/Tratar.json"),
