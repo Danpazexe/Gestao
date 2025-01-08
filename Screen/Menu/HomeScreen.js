@@ -8,7 +8,6 @@ const HomeScreen = ({ isDarkMode }) => {
   const navigation = useNavigation();
   const fadeAnim = new Animated.Value(0);
   const translateY = new Animated.Value(50);
-  const [lastBackPress, setLastBackPress] = useState(0);
 
   const [buttons] = useState([
     {
@@ -121,39 +120,6 @@ const HomeScreen = ({ isDarkMode }) => {
 
     Animated.stagger(50, animations).start();
   }, []);
-
-  useEffect(() => {
-    const backAction = () => {
-      const currentTime = new Date().getTime();
-      
-      if (currentTime - lastBackPress < 2000) {
-        BackHandler.exitApp();
-        return true;
-      }
-
-      setLastBackPress(currentTime);
-      
-      if (Platform.OS === 'android') {
-        ToastAndroid.show('Pressione voltar novamente para sair', ToastAndroid.SHORT);
-      } else {
-        Alert.alert(
-          'Sair do App',
-          'Pressione voltar novamente para sair',
-          [{ text: 'OK' }],
-          { cancelable: false }
-        );
-      }
-      
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, [lastBackPress]);
 
   const handleNavigation = (screen) => {
     console.log(`Navegando para: ${screen}`);

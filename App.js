@@ -1,8 +1,8 @@
 import 'react-native-gesture-handler';
-import React, { useEffect, useState } from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import React, { useEffect, useState, useRef } from 'react';
+import { NavigationContainer, DefaultTheme, DarkTheme, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { StatusBar, Appearance } from 'react-native';
+import { StatusBar, Appearance, BackHandler, ToastAndroid, Platform, Alert } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from './Screen/Components/toastConfig';
@@ -37,6 +37,9 @@ const CustomStatusBar = ({ isDarkMode }) => (
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(Appearance.getColorScheme() === 'dark');
+  const [lastBackPress, setLastBackPress] = useState(0);
+  const navigationRef = useNavigationContainerRef();
+  const routeNameRef = useRef();
 
   useEffect(() => {
     const updateNavigationBar = async () => {
@@ -52,9 +55,58 @@ export default function App() {
     return () => subscription?.remove();
   }, [isDarkMode]);
 
+  useEffect(() => {
+    const backAction = () => {
+      const currentRoute = routeNameRef.current;
+      
+      // Verifica se está na tela HomeScreen
+      if (currentRoute === 'HomeScreen') {
+        const currentTime = new Date().getTime();
+        
+        if (currentTime - lastBackPress < 2000) {
+          BackHandler.exitApp();
+          return true;
+        }
+
+        setLastBackPress(currentTime);
+        
+        if (Platform.OS === 'android') {
+          ToastAndroid.show('Pressione voltar novamente para sair', ToastAndroid.SHORT);
+        } else {
+          Alert.alert(
+            'Sair do App',
+            'Pressione voltar novamente para sair',
+            [{ text: 'OK' }],
+            { cancelable: false }
+          );
+        }
+        
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [lastBackPress]);
+
   return (
     <PaperProvider>
-      <NavigationContainer theme={isDarkMode ? DarkTheme : DefaultTheme}>
+      <NavigationContainer 
+        ref={navigationRef}
+        theme={isDarkMode ? DarkTheme : DefaultTheme}
+        onReady={() => {
+          routeNameRef.current = navigationRef.getCurrentRoute()?.name;
+        }}
+        onStateChange={() => {
+          const currentRouteName = navigationRef.getCurrentRoute()?.name;
+          routeNameRef.current = currentRouteName;
+        }}
+      >
         <CustomStatusBar isDarkMode={isDarkMode} />
         <Stack.Navigator initialRouteName="EntryScreen">
           <Stack.Screen name="EntryScreen">
