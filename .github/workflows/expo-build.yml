@@ -2,7 +2,7 @@ name: Expo Build
 on:
   push:
     branches:
-      - main  # ou master, dependendo da sua branch principal
+      - main
   pull_request:
     branches:
       - main
@@ -32,8 +32,8 @@ jobs:
       - name: 🚀 Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: 🚀 EAS Login
+      - name: 🔐 EAS Login
         run: eas login --non-interactive
 
       - name: 🚀 Build app
-        run: eas build --platform android --non-interactive --profile preview 
+        run: eas build --platform android --non-interactive --profile preview
