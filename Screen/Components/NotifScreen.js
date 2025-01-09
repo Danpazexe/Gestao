@@ -232,13 +232,20 @@ const NotifScreen = ({ navigation, isDarkMode }) => {
 
               const body = formatExpirationMessage(daysUntilExpiration, product.name, formattedDate);
 
-              if (Platform.OS === 'android') {
-                await Notifications.setNotificationChannelAsync(style.channelId, {
-                  name: `${alertLevel.charAt(0).toUpperCase() + alertLevel.slice(1)} Alerts`,
-                  importance: style.importance,
-                  vibrationPattern: vibrationEnabled ? [0, 250, 250, 250] : null,
-                  lightColor: style.color,
-                });
+              // Configure o trigger baseado na repetição
+              let trigger;
+              if (repeatNotifications) {
+                // Para notificações repetidas
+                trigger = {
+                  seconds: repeatInterval * 3600, // Converte horas para segundos
+                  repeats: true
+                };
+              } else {
+                // Para notificação única
+                trigger = {
+                  date: notificationDate,
+                  repeats: false
+                };
               }
 
               await Notifications.scheduleNotificationAsync({
@@ -251,22 +258,45 @@ const NotifScreen = ({ navigation, isDarkMode }) => {
                     alertLevel,
                     expirationDate: product.expirationDate
                   },
-                  sound: soundEnabled,
-                  priority: style.priority,
+                  sound: true,
+                  priority: 'high',
                   color: style.color,
                   vibrate: vibrationEnabled ? [0, 250, 250, 250] : null,
                   channelId: style.channelId,
                   smallIcon: "./assets/Image/LOGO432.png",
                   largeIcon: "./assets/Image/LOGO432.png",
-                  threadId: alertLevel,
-                  categoryIdentifier: "product_expiration",
-                  interruptionLevel: style.priority,
+                  autoDismiss: false, // Impede que a notificação seja automaticamente descartada
                 },
-                trigger: {
-                  date: notificationDate,
-                  repeats: repeatNotifications,
-                },
+                trigger,
               });
+
+              // Se for repetição, agende também a primeira notificação
+              if (repeatNotifications && notificationDate > new Date()) {
+                await Notifications.scheduleNotificationAsync({
+                  content: {
+                    title,
+                    subtitle,
+                    body,
+                    data: { 
+                      productId: product.id,
+                      alertLevel,
+                      expirationDate: product.expirationDate
+                    },
+                    sound: true,
+                    priority: 'high',
+                    color: style.color,
+                    vibrate: vibrationEnabled ? [0, 250, 250, 250] : null,
+                    channelId: style.channelId,
+                    smallIcon: "./assets/Image/LOGO432.png",
+                    largeIcon: "./assets/Image/LOGO432.png",
+                    autoDismiss: false, // Impede que a notificação seja automaticamente descartada
+                  },
+                  trigger: {
+                    date: notificationDate,
+                    repeats: false
+                  },
+                });
+              }
             }
           }
         }
@@ -493,6 +523,21 @@ const NotifScreen = ({ navigation, isDarkMode }) => {
             onValueChange={setVibrationEnabled}
             trackColor={{ false: "#e45635", true: "#4CAF50" }}
             thumbColor={vibrationEnabled ? "#ffffff" : "#f4f3f4"}
+          />
+        </View>
+
+        <View style={[styles.settingGroup, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
+          <View style={styles.settingItem}>
+            <MaterialIcons name="repeat" size={24} color={isDarkMode ? '#EAEAEA' : '#333333'} />
+            <Text style={[styles.settingText, isDarkMode ? styles.darkText : styles.lightText]}>
+              Repetir notificações
+            </Text>
+          </View>
+          <Switch
+            value={repeatNotifications}
+            onValueChange={setRepeatNotifications}
+            trackColor={{ false: "#e45635", true: "#4CAF50" }}
+            thumbColor={repeatNotifications ? "#ffffff" : "#f4f3f4"}
           />
         </View>
 

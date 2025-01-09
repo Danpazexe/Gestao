@@ -2,7 +2,7 @@
   "expo": {
     "name": "gestao",
     "slug": "Gestao",
-    "version": "0.0.24",
+    "version": "0.0.25",
     "orientation": "portrait",
     "icon": "./assets/Image/LOGO1024.png",
     "userInterfaceStyle": "light",
@@ -57,9 +57,18 @@
         "expo-notifications",
         {
           "icon": "./assets/Image/LOGO432.png",
-          "color": "#6cb6a5"
+          "color": "#ffffff",
+          "sounds": ["./assets/Sound/notification.wav"],
+          "mode": "production"
         }
       ]
-    ]
+    ],
+    "notification": {
+      "icon": "./assets/Image/LOGO432.png",
+      "color": "#ffffff",
+      "iosDisplayInForeground": true,
+      "androidMode": "default",
+      "androidCollapsedTitle": "Nova notificação"
+    }
   }
 }
