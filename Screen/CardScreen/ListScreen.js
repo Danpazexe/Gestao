@@ -3,7 +3,6 @@ import { View, FlatList, StyleSheet, Alert, TextInput, ActivityIndicator, Image,
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductItem from '../Components/ProductItem';
 import debounce from 'lodash.debounce';
-import AlertDialog from '../Components/AlertDialog';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Animated, LayoutAnimation } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,7 +21,13 @@ const useProducts = () => {
       }
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
-      Alert.alert('Erro', 'Não foi possível carregar os produtos.');
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao carregar produtos',
+        text2: 'Não foi possível carregar os produtos.',
+        visibilityTime: 3000,
+        position: 'top',
+      });
     } finally {
       setLoading(false);
     }
@@ -33,7 +38,13 @@ const useProducts = () => {
       await AsyncStorage.setItem('products', JSON.stringify(productsToSave));
     } catch (error) {
       console.error('Erro ao salvar produtos:', error);
-      Alert.alert('Erro', 'Não foi possível salvar os produtos.');
+      Toast.show({
+        type: 'error',
+        text1: 'Erro ao salvar produtos',
+        text2: 'Não foi possível salvar os produtos.',
+        visibilityTime: 3000,
+        position: 'top',
+      });
     }
   };
 
@@ -157,13 +168,13 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState('descricao');
   const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [productToDelete, setProductToDelete] = useState(null);
   const [showExpiring, setShowExpiring] = useState(false);
   const [treatmentModalVisible, setTreatmentModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [treatmentQuantity, setTreatmentQuantity] = useState('');
   const [sortOrder, setSortOrder] = useState({ field: 'validade', direction: 'asc' });
+  const [deleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   useEffect(() => {
     loadProducts();
@@ -187,7 +198,13 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
           saveProducts(updatedProducts);
           return updatedProducts;
         } else {
-          Alert.alert('Produto já existe', 'Este produto já está na lista.');
+          Toast.show({
+            type: 'info',
+            text1: 'Produto já existe',
+            text2: 'Este produto já está na lista.',
+            visibilityTime: 3000,
+            position: 'top',
+          });
         }
         return prevProducts;
       });
@@ -249,17 +266,25 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
 
   const handleDeleteProduct = (product) => {
     setProductToDelete(product);
-    setAlertVisible(true);
+    setDeleteConfirmationVisible(true);
   };
 
-  const confirmDeleteProduct = async () => {
+  const confirmDelete = async () => {
     if (productToDelete) {
-      const updatedProducts = products.filter(product => product.id !== productToDelete.id);
+      const updatedProducts = products.filter(p => p.id !== productToDelete.id);
       setProducts(updatedProducts);
       await saveProducts(updatedProducts);
-      setAlertVisible(false);
-      Alert.alert('Sucesso', 'Produto excluído com sucesso!');
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Produto excluído',
+        text2: 'O produto foi excluído com sucesso!',
+        visibilityTime: 2000,
+        position: 'top',
+      });
     }
+    setDeleteConfirmationVisible(false);
+    setProductToDelete(null);
   };
 
   const handleEditProduct = (product) => {
@@ -866,14 +891,6 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         />
       )}
-      <AlertDialog
-        visible={alertVisible}
-        title="Confirmar Exclusão"
-        message="Você tem certeza que deseja excluir este produto?"
-        onConfirm={confirmDeleteProduct}
-        onCancel={() => setAlertVisible(false)}
-        onDismiss={() => setAlertVisible(false)}
-      />
       <TreatmentModal
         visible={treatmentModalVisible}
         onClose={handleModalClose}
@@ -883,6 +900,50 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
         quantity={treatmentQuantity}
         onQuantityChange={handleQuantityChange}
       />
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteConfirmationVisible}
+        onRequestClose={() => setDeleteConfirmationVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalView, isDarkMode && styles.darkModalView]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>
+                Confirmar Exclusão
+              </Text>
+              <Text style={[styles.productName, isDarkMode && { color: '#999' }]} numberOfLines={2}>
+                {productToDelete?.descricao}
+              </Text>
+            </View>
+
+            <Text style={[styles.confirmationText, isDarkMode && { color: '#999' }]}>
+              Tem certeza que deseja excluir este produto?
+            </Text>
+
+            <View style={styles.confirmationButtons}>
+              <Pressable
+                style={[styles.confirmationButton, styles.cancelButton]}
+                onPress={() => {
+                  setDeleteConfirmationVisible(false);
+                  setProductToDelete(null);
+                }}
+              >
+                <MaterialIcons name="close" size={24} color="#FFF" />
+                <Text style={styles.confirmationButtonText}>Cancelar</Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.confirmationButton, styles.deleteButton]}
+                onPress={confirmDelete}
+              >
+                <MaterialIcons name="delete" size={24} color="#FFF" />
+                <Text style={styles.confirmationButtonText}>Excluir</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1283,6 +1344,43 @@ const styles = StyleSheet.create({
   },
   activeSortButtonText: {
     color: '#fff',
+  },
+  confirmationText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  confirmationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 10,
+  },
+  confirmationButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  cancelButton: {
+    backgroundColor: '#757575',
+  },
+  deleteButton: {
+    backgroundColor: '#D32F2F',
+  },
+  confirmationButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "gestao",
     "slug": "Gestao",
-    "version": "0.0.23",
+    "version": "0.0.24",
     "orientation": "portrait",
     "icon": "./assets/Image/LOGO1024.png",
     "userInterfaceStyle": "light",
@@ -23,7 +23,14 @@
       "package": "com.avante.gestao",
       "permissions": [
         "CAMERA",
-        "INTERNET"
+        "INTERNET",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM",
+        "POST_NOTIFICATIONS",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ],
       "softwareKeyboardLayoutMode": "pan"
     },
@@ -36,9 +43,21 @@
       }
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     },
     "privacy": "public",
-    "githubUrl": "https://github.com/usuario/gestao"
+    "githubUrl": "https://github.com/usuario/gestao",
+    "plugins": [
+      "expo-local-authentication",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/Image/LOGO432.png",
+          "color": "#6cb6a5",
+          "sounds": ["./assets/sounds/notification.wav"]
+        }
+      ]
+    ]
   }
 }

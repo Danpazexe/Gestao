@@ -21,6 +21,7 @@ import LoginScreen from './Screen/Entrada/LoginScreen';
 import RegisterScreen from './Screen/Registro/RegisterScreen';
 import ProfileScreen from "./Screen/Perfil/ProfileScreen";
 import TratarScreen from './Screen/Tratativas/TratarScreen';
+import NotifScreen from './Screen/Components/NotifScreen';
 
 const Stack = createStackNavigator();
 
@@ -152,6 +153,9 @@ export default function App() {
           </Stack.Screen>
           <Stack.Screen name="TratarScreen">
             {props => <TratarScreen {...props} isDarkMode={isDarkMode} />}
+          </Stack.Screen>
+          <Stack.Screen name="ValiditySettings">
+            {props => <NotifScreen {...props} isDarkMode={isDarkMode} />}
           </Stack.Screen>
         </Stack.Navigator>
         <Toast config={toastConfig} />

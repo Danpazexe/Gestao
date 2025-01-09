@@ -22,15 +22,18 @@
         "source.fixAll.cspell": true
     },
     "cSpell.words": [
+        "calculatediasrestantes",
         "codauxiliar",
         "codprod",
         "descricao",
         "diasrestantes",
         "gestao",
         "mobileprovision",
+        "Notif",
         "Opçoes",
         "Pressable",
         "Reseta",
+        "swipeable",
         "Swipeable"
     ]
 }
