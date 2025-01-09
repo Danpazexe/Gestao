@@ -4,23 +4,73 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 // Componente para exibir detalhes sobre um produto
 const ProductItem = ({ product, isDarkMode }) => {
-  // Função para determinar o texto e cor de acordo com os dias restantes até a validade
+  // Função melhorada para determinar o texto e cor da validade
   const getDaysToExpirationText = (days) => {
-    if (days === 0) {
-      return { number: 'Hoje', label: '', color: '#F44336' }; 
+    if (days < 0) {
+      return { 
+        number: 'Vencido', 
+        label: `há ${Math.abs(days)} dia(s)`, 
+        color: '#757575',
+        backgroundColor: '#ffffff'
+      }; 
+    } else if (days === 0) {
+      return { 
+        number: 'Vence', 
+        label: 'Hoje', 
+        color: '#f44336',
+        backgroundColor: '#ffebee'
+      }; 
     } else if (days > 0 && days <= 15) {
-      return { number: days.toString(), label: 'Dia(s)', color: '#E91E63' };  
+      return { 
+        number: days.toString(), 
+        label: 'Dias restantes', 
+        color: '#e91e63',
+        backgroundColor: '#fce4ec'
+      };  
     } else if (days > 15 && days <= 30) {
-      return { number: days.toString(), label: 'Dia(s)', color: '#FFC107' }; 
-    } else if (days > 30) {
-      return { number: days.toString(), label: 'Dia(s)', color: '#4CAF50' }; 
+      return { 
+        number: days.toString(), 
+        label: 'Dias restantes', 
+        color: '#ff9800',
+        backgroundColor: '#fff3e0'
+      }; 
     } else {
-      return { number: '', label: 'Expirado', color: '#B0BEC5' }; 
+      return { 
+        number: days.toString(), 
+        label: 'Dias restantes', 
+        color: '#4caf50',
+        backgroundColor: '#e8f5e9'
+      }; 
     }
   };
 
-  const diasrestantes = Number(product.diasrestantes);
-  const { number, label, color } = getDaysToExpirationText(diasrestantes);
+  // Cálculo dos dias restantes
+  const calcularDiasRestantes = () => {
+    try {
+      // Converte a string de data para partes
+      const [dia, mes, ano] = product.validade.split('/').map(Number);
+      
+      // Cria as datas
+      const hoje = new Date();
+      const dataValidade = new Date(ano, mes - 1, dia); // mes - 1 porque em JS os meses começam do 0
+      
+      // Reseta as horas para comparar apenas as datas
+      hoje.setHours(0, 0, 0, 0);
+      dataValidade.setHours(0, 0, 0, 0);
+      
+      // Calcula a diferença em dias
+      const diffTime = dataValidade.getTime() - hoje.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      return diffDays;
+    } catch (error) {
+      console.error('Erro ao calcular dias restantes:', error);
+      return 0;
+    }
+  };
+
+  const diffDays = calcularDiasRestantes();
+  const expirationInfo = getDaysToExpirationText(diffDays);
 
   return (
     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
@@ -60,10 +110,29 @@ const ProductItem = ({ product, isDarkMode }) => {
         </View>
       </View>
 
-      {/* Dias Restantes até a Expiração */}
-      <View style={[styles.remainingDaysContainer, { borderColor: color }]}>
-        <Text style={[styles.diasrestantes, { color: color }]}>{number}</Text>
-        <Text style={[styles.daysLabel, { color: color }]}>{label}</Text>
+      {/* Dias Restantes até a Expiração - Layout melhorado */}
+      <View style={[
+        styles.remainingDaysContainer, 
+        { 
+          backgroundColor: isDarkMode ? 'transparent' : expirationInfo.backgroundColor,
+          borderColor: expirationInfo.color,
+          borderWidth: 2,
+          borderRadius: 12,
+          padding: 8
+        }
+      ]}>
+        <Text style={[
+          styles.diasrestantes, 
+          { color: expirationInfo.color }
+        ]}>
+          {expirationInfo.number}
+        </Text>
+        <Text style={[
+          styles.daysLabel, 
+          { color: expirationInfo.color }
+        ]}>
+          {expirationInfo.label}
+        </Text>
       </View>
     </View>
   );
@@ -130,16 +199,21 @@ const styles = StyleSheet.create({
     flex: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 1,
+    padding: 10,
   },
  
   diasrestantes: {
-    fontSize: 48,
+    fontSize: 36,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   
   daysLabel: {
-    fontSize: 25,
+    fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });
 

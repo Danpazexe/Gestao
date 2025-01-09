@@ -163,6 +163,7 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
   const [treatmentModalVisible, setTreatmentModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [treatmentQuantity, setTreatmentQuantity] = useState('');
+  const [sortOrder, setSortOrder] = useState({ field: 'validade', direction: 'asc' });
 
   useEffect(() => {
     loadProducts();
@@ -330,6 +331,142 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
   const handleQuantityChange = useCallback((value) => {
     setTreatmentQuantity(value);
   }, []);
+
+  const sortProducts = (products) => {
+    return [...products].sort((a, b) => {
+      const { field, direction } = sortOrder;
+      const multiplier = direction === 'asc' ? 1 : -1;
+
+      switch (field) {
+        case 'validade':
+          return multiplier * (new Date(a.validade) - new Date(b.validade));
+        case 'quantidade':
+          return multiplier * (a.quantidade - b.quantidade);
+        case 'nome':
+          return multiplier * a.descricao.localeCompare(b.descricao);
+        default:
+          return 0;
+      }
+    });
+  };
+
+  const toggleSort = (field) => {
+    setSortOrder(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const renderSortOptions = () => {
+    const dividerStyle = {
+      width: 1,
+      backgroundColor: isDarkMode ? '#444' : '#e0e0e0',
+      marginHorizontal: 2,
+    };
+
+    // Função auxiliar para retornar o ícone correto de ordenação
+    const getSortIcon = (field) => {
+      if (sortOrder.field === field) {
+        return sortOrder.direction === 'asc' ? 'arrow-upward' : 'arrow-downward';
+      }
+      return null;
+    };
+
+    return (
+      <View style={[styles.sortContainer, isDarkMode && styles.darkSortContainer]}>
+        <TouchableOpacity 
+          style={[
+            styles.sortButton, 
+            sortOrder.field === 'validade' && styles.activeSortButton
+          ]}
+          onPress={() => toggleSort('validade')}
+        >
+          <MaterialIcons 
+            name="event" 
+            size={16} 
+            color={sortOrder.field === 'validade' ? '#FFF' : isDarkMode ? '#FFF' : '#666'} 
+          />
+          <Text style={[
+            styles.sortButtonText,
+            isDarkMode && styles.darkSortButtonText,
+            sortOrder.field === 'validade' && styles.activeSortButtonText
+          ]}>
+            Validade
+            {sortOrder.field === 'validade' && (
+              <MaterialIcons 
+                name={getSortIcon('validade')}
+                size={12}
+                color="#FFF"
+                style={{ marginLeft: 2 }}
+              />
+            )}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={dividerStyle} />
+
+        <TouchableOpacity 
+          style={[
+            styles.sortButton, 
+            sortOrder.field === 'quantidade' && styles.activeSortButton
+          ]}
+          onPress={() => toggleSort('quantidade')}
+        >
+          <MaterialIcons 
+            name="sort" 
+            size={16} 
+            color={sortOrder.field === 'quantidade' ? '#FFF' : isDarkMode ? '#FFF' : '#666'} 
+          />
+          <Text style={[
+            styles.sortButtonText,
+            isDarkMode && styles.darkSortButtonText,
+            sortOrder.field === 'quantidade' && styles.activeSortButtonText
+          ]}>
+            Qtd
+            {sortOrder.field === 'quantidade' && (
+              <MaterialIcons 
+                name={getSortIcon('quantidade')}
+                size={12}
+                color="#FFF"
+                style={{ marginLeft: 2 }}
+              />
+            )}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={dividerStyle} />
+
+        <TouchableOpacity 
+          style={[
+            styles.sortButton, 
+            sortOrder.field === 'nome' && styles.activeSortButton
+          ]}
+          onPress={() => toggleSort('nome')}
+        >
+          <MaterialIcons 
+            name="sort-by-alpha" 
+            size={16} 
+            color={sortOrder.field === 'nome' ? '#FFF' : isDarkMode ? '#FFF' : '#666'} 
+          />
+          <Text style={[
+            styles.sortButtonText,
+            isDarkMode && styles.darkSortButtonText,
+            sortOrder.field === 'nome' && styles.activeSortButtonText
+          ]}>
+            Nome
+            {sortOrder.field === 'nome' && (
+              <MaterialIcons 
+                name={getSortIcon('nome')}
+                size={12}
+                color="#FFF"
+                style={{ marginLeft: 2 }}
+              />
+            )}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const renderProductItem = ({ item }) => {
     const diasrestantes = calculatediasrestantes(item.validade);
@@ -544,27 +681,67 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
         color={isSelected ? '#fff' : (isDarkMode ? '#fff' : '#666')} 
       />
       <Text style={[
-        styles.optionText,
-        isSelected && styles.optionTextSelected,
-        isDarkMode && styles.darkOptionText
+        styles.filterOptionText,
+        isSelected && styles.filterOptionTextSelected,
+        isDarkMode && styles.darkFilterOptionText
       ]}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 
-  const getPlaceholderText = () => {
-    switch (filterType) {
-      case 'descricao':
-        return 'Buscar por nome ou lote do produto...';
-      case 'codprod':
-        return 'Buscar por código interno...';
-      case 'codauxiliar':
-        return 'Buscar por código de barras...';
-      default:
-        return 'Buscar produto...';
-    }
-  };
+  const renderSearchBar = () => (
+    <View style={styles.searchWrapper}>
+      <View style={[styles.searchContainer, isDarkMode && styles.darkSearchContainer]}>
+        <TouchableOpacity 
+          style={[styles.filterButton, isDarkMode && styles.darkFilterButton]} 
+          onPress={toggleFilter}
+        >
+          <MaterialIcons 
+            name={filterType === 'descricao' ? 'text-fields' : 
+                  filterType === 'codprod' ? 'code' : 'qr-code'} 
+            size={24} 
+            color="#FFF" 
+          />
+        </TouchableOpacity>
+        
+        <TextInput
+          style={[styles.searchInput, isDarkMode && styles.darkSearchInput]}
+          placeholder={
+            filterType === 'descricao' ? 'Buscar por nome do produto...' :
+            filterType === 'codprod' ? 'Buscar por código interno...' :
+            'Buscar por código EAN...'
+          }
+          placeholderTextColor={isDarkMode ? '#666' : '#888'}
+          onChangeText={debouncedSearch}
+          keyboardType={filterType !== 'descricao' ? 'numeric' : 'default'}
+        />
+      </View>
+      
+      {isFilterVisible && (
+        <Animated.View style={[styles.filterOptions, isDarkMode && styles.darkFilterOptions]}>
+          <FilterOption
+            label="Nome do Produto"
+            icon="text-fields"
+            isSelected={filterType === 'descricao'}
+            onPress={() => setSelectedFilter('descricao')}
+          />
+          <FilterOption
+            label="Código Interno"
+            icon="code"
+            isSelected={filterType === 'codprod'}
+            onPress={() => setSelectedFilter('codprod')}
+          />
+          <FilterOption
+            label="Código EAN"
+            icon="qr-code"
+            isSelected={filterType === 'codauxiliar'}
+            onPress={() => setSelectedFilter('codauxiliar')}
+          />
+        </Animated.View>
+      )}
+    </View>
+  );
 
   const handleTreatProduct = async (product, treatmentType) => {
     try {
@@ -661,45 +838,8 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
 
   return (
     <View style={[styles.container, isDarkMode && styles.darkBackground]}>
-      <View style={styles.searchWrapper}>
-        <View style={[styles.searchContainer, isDarkMode && styles.darkSearchContainer]}>
-          <TouchableOpacity 
-            style={[styles.filterButton, isDarkMode && styles.darkFilterButton]} 
-            onPress={toggleFilter}
-          >
-            <MaterialIcons name="filter-list" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <TextInput
-            style={[styles.searchInput, isDarkMode && styles.darkSearchInput]}
-            placeholder={getPlaceholderText()}
-            placeholderTextColor={isDarkMode ? '#666' : '#888'}
-            onChangeText={debouncedSearch}
-          />
-        </View>
-        
-        {isFilterVisible && (
-          <Animated.View style={[styles.filterOptions, isDarkMode && styles.darkFilterOptions]}>
-            <FilterOption
-              label="Nome"
-              icon="text-fields"
-              isSelected={filterType === 'descricao'}
-              onPress={() => setSelectedFilter('descricao')}
-            />
-            <FilterOption
-              label="Código Interno"
-              icon="code"
-              isSelected={filterType === 'codprod'}
-              onPress={() => setSelectedFilter('codprod')}
-            />
-            <FilterOption
-              label="Código de barras"
-              icon="qr-code"
-              isSelected={filterType === 'codauxiliar'}
-              onPress={() => setSelectedFilter('codauxiliar')}
-            />
-          </Animated.View>
-        )}
-      </View>
+      {renderSearchBar()}
+      {renderSortOptions()}
       <View style={styles.statsContainer}>
         <Text style={[styles.statsText, isDarkMode && styles.darkStatsText]}>
           {filterAndSortProducts.length} {filterAndSortProducts.length === 1 ? 'item' : 'itens'}
@@ -710,7 +850,7 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
         <ActivityIndicator size="large" color="#0077ed" style={styles.loadingIndicator} />
       ) : (
         <FlatList
-          data={filterAndSortProducts}
+          data={sortProducts(filterAndSortProducts)}
           renderItem={renderProductItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
@@ -782,16 +922,9 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   darkFilterButton: {
     backgroundColor: '#1e88e5',
-  },
-  filterText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   searchInput: {
     flex: 1,
@@ -802,7 +935,6 @@ const styles = StyleSheet.create({
   },
   darkSearchInput: {
     color: '#fff',
-    backgroundColor: 'transparent',
   },
   loadingIndicator: {
     marginTop: 20,
@@ -856,17 +988,17 @@ const styles = StyleSheet.create({
   darkFilterOptionSelected: {
     backgroundColor: '#1e88e5',
   },
-  optionText: {
+  filterOptionText: {
     marginLeft: 12,
     fontSize: 15,
     color: '#666',
     fontWeight: '500',
   },
-  optionTextSelected: {
+  filterOptionTextSelected: {
     color: '#fff',
     fontWeight: '600',
   },
-  darkOptionText: {
+  darkFilterOptionText: {
     color: '#fff',
   },
   swipeable: {
@@ -1112,6 +1244,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingVertical: 6,
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginVertical: 6,
+    padding: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  darkSortContainer: {
+    backgroundColor: '#2e2e2e',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 6,
+    borderRadius: 6,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  activeSortButton: {
+    backgroundColor: '#0077ed',
+  },
+  sortButtonText: {
+    marginLeft: 4,
+    color: '#666',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  darkSortButtonText: {
+    color: '#fff',
+  },
+  activeSortButtonText: {
+    color: '#fff',
   },
 });
 
