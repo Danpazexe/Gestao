@@ -59,8 +59,10 @@ export default function App() {
     const backAction = () => {
       const currentRoute = routeNameRef.current;
       
-      // Verifica se está na tela HomeScreen
-      if (currentRoute === 'HomeScreen') {
+      // Verifica se está na tela HomeScreen ou LoginScreen
+      if (currentRoute === 'HomeScreen' || 
+        currentRoute === 'LoginScreen'
+      ) {
         const currentTime = new Date().getTime();
         
         if (currentTime - lastBackPress < 2000) {
