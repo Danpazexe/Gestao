@@ -19,7 +19,7 @@
         }
     },
     "editor.codeActionsOnSave": {
-        "source.fixAll.cspell": true
+        "source.fixAll.cspell": "explicit"
     },
     "cSpell.words": [
         "calculatediasrestantes",
@@ -35,5 +35,13 @@
         "Reseta",
         "swipeable",
         "Swipeable"
+    ],
+    "spellright.language": [
+        "pt"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext"
     ]
 }

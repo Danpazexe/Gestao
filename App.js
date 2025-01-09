@@ -2,7 +2,7 @@ import 'react-native-gesture-handler';
 import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { StatusBar, Appearance, BackHandler, ToastAndroid, Platform, Alert } from 'react-native';
+import { StatusBar, Appearance, BackHandler, ToastAndroid, Platform, Alert, SafeAreaView } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from './Screen/Components/toastConfig';
@@ -27,13 +27,15 @@ const Stack = createStackNavigator();
 
 // Componente StatusBar customizado
 const CustomStatusBar = ({ isDarkMode }) => (
-  <StatusBar
-    translucent
-    backgroundColor="transparent"
-    animated
-    barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-    hidden={false} // Define visibilidade conforme necessário
-  />
+  <SafeAreaView style={{ backgroundColor: 'transparent' }}>
+    <StatusBar
+      translucent
+      backgroundColor="transparent"
+      animated
+      barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+      hidden={false}
+    />
+  </SafeAreaView>
 );
 
 export default function App() {
@@ -98,68 +100,70 @@ export default function App() {
   }, [lastBackPress]);
 
   return (
-    <PaperProvider>
-      <NavigationContainer 
-        ref={navigationRef}
-        theme={isDarkMode ? DarkTheme : DefaultTheme}
-        onReady={() => {
-          routeNameRef.current = navigationRef.getCurrentRoute()?.name;
-        }}
-        onStateChange={() => {
-          const currentRouteName = navigationRef.getCurrentRoute()?.name;
-          routeNameRef.current = currentRouteName;
-        }}
-      >
-        <CustomStatusBar isDarkMode={isDarkMode} />
-        <Stack.Navigator initialRouteName="EntryScreen">
-          <Stack.Screen name="EntryScreen">
-            {props => <EntryScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="HomeScreen">
-            {props => <HomeScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="ListScreen">
-            {props => <ListScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="AddProductScreen">
-            {props => <AddProductScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="DashboardScreen">
-            {props => <DashboardScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="ExcelScreen">
-            {props => <ExcelScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="ProfileScreen">
-            {props => <ProfileScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="LoginScreen" options={{ headerShown: false }}>
-            {props => <LoginScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="RegisterScreen" options={{ headerShown: false }}>
-            {props => <RegisterScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="BarcodeScannerScreen">
-            {props => <BarcodeScannerScreen {...props} />}
-          </Stack.Screen>
-          <Stack.Screen name="SettingsScreen">
-            {props => (
-              <SettingsScreen
-                {...props}
-                isDarkMode={isDarkMode}
-                setIsDarkMode={setIsDarkMode}
-              />
-            )}
-          </Stack.Screen>
-          <Stack.Screen name="TratarScreen">
-            {props => <TratarScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-          <Stack.Screen name="ValiditySettings">
-            {props => <NotifScreen {...props} isDarkMode={isDarkMode} />}
-          </Stack.Screen>
-        </Stack.Navigator>
-        <Toast config={toastConfig} />
-      </NavigationContainer>
-    </PaperProvider>
+    <SafeAreaView style={{ flex: 1 }}>
+      <PaperProvider>
+        <NavigationContainer 
+          ref={navigationRef}
+          theme={isDarkMode ? DarkTheme : DefaultTheme}
+          onReady={() => {
+            routeNameRef.current = navigationRef.getCurrentRoute()?.name;
+          }}
+          onStateChange={() => {
+            const currentRouteName = navigationRef.getCurrentRoute()?.name;
+            routeNameRef.current = currentRouteName;
+          }}
+        >
+          <CustomStatusBar isDarkMode={isDarkMode} />
+          <Stack.Navigator initialRouteName="EntryScreen">
+            <Stack.Screen name="EntryScreen">
+              {props => <EntryScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="HomeScreen">
+              {props => <HomeScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="ListScreen">
+              {props => <ListScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="AddProductScreen">
+              {props => <AddProductScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="DashboardScreen">
+              {props => <DashboardScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="ExcelScreen">
+              {props => <ExcelScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="ProfileScreen">
+              {props => <ProfileScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="LoginScreen" options={{ headerShown: false }}>
+              {props => <LoginScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="RegisterScreen" options={{ headerShown: false }}>
+              {props => <RegisterScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="BarcodeScannerScreen">
+              {props => <BarcodeScannerScreen {...props} />}
+            </Stack.Screen>
+            <Stack.Screen name="SettingsScreen">
+              {props => (
+                <SettingsScreen
+                  {...props}
+                  isDarkMode={isDarkMode}
+                  setIsDarkMode={setIsDarkMode}
+                />
+              )}
+            </Stack.Screen>
+            <Stack.Screen name="TratarScreen">
+              {props => <TratarScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+            <Stack.Screen name="ValiditySettings">
+              {props => <NotifScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+          </Stack.Navigator>
+          <Toast config={toastConfig} />
+        </NavigationContainer>
+      </PaperProvider>
+    </SafeAreaView>
   );
 }

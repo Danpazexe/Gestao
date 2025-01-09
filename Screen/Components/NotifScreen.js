@@ -16,7 +16,6 @@ import * as Notifications from 'expo-notifications';
 const NotifScreen = ({ navigation, isDarkMode }) => {
   const [notificationDays, setNotificationDays] = useState(7);
   const [alertLevel, setAlertLevel] = useState('normal'); // 'normal', 'warning', 'critical'
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [repeatNotifications, setRepeatNotifications] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState(24); // horas
@@ -40,7 +39,6 @@ const NotifScreen = ({ navigation, isDarkMode }) => {
         const parsedSettings = JSON.parse(settings);
         setNotificationDays(parsedSettings.notificationDays ?? 7);
         setAlertLevel(parsedSettings.alertLevel ?? 'normal');
-        setSoundEnabled(parsedSettings.soundEnabled ?? true);
         setVibrationEnabled(parsedSettings.vibrationEnabled ?? true);
         setRepeatNotifications(parsedSettings.repeatNotifications ?? false);
         setRepeatInterval(parsedSettings.repeatInterval ?? 24);
@@ -55,7 +53,6 @@ const NotifScreen = ({ navigation, isDarkMode }) => {
       const settings = {
         notificationDays,
         alertLevel,
-        soundEnabled,
         vibrationEnabled,
         repeatNotifications,
         repeatInterval,
@@ -170,7 +167,6 @@ const NotifScreen = ({ navigation, isDarkMode }) => {
             alertLevel,
             productId: 'test-product'
           },
-          sound: soundEnabled,
           priority: style.priority,
           color: style.color,
           vibrate: vibrationEnabled ? [0, 250, 250, 250] : null,
@@ -301,6 +297,17 @@ const NotifScreen = ({ navigation, isDarkMode }) => {
       default:
         return { icon: 'notifications', color: '#4CAF50' };
     }
+  };
+
+  const schedulePushNotification = async () => {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Título da notificação",
+        body: "Corpo da notificação",
+        sound: true,
+      },
+      trigger: { seconds: 2 },
+    });
   };
 
   return (
@@ -472,21 +479,6 @@ const NotifScreen = ({ navigation, isDarkMode }) => {
               Crítico
             </Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={[styles.settingGroup, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
-          <View style={styles.settingItem}>
-            <MaterialIcons name="volume-up" size={24} color={isDarkMode ? '#EAEAEA' : '#333333'} />
-            <Text style={[styles.settingText, isDarkMode ? styles.darkText : styles.lightText]}>
-              Som
-            </Text>
-          </View>
-          <Switch
-            value={soundEnabled}
-            onValueChange={setSoundEnabled}
-            trackColor={{ false: "#e45635", true: "#4CAF50" }}
-            thumbColor={soundEnabled ? "#ffffff" : "#f4f3f4"}
-          />
         </View>
 
         <View style={[styles.settingGroup, isDarkMode ? styles.darkContainer : styles.lightContainer]}>

@@ -13,13 +13,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.avante.Gestao"
+      "bundleIdentifier": "com.avante.Gestao",
+      "icon": "./assets/Image/LOGO1024.png"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/Image/LOGO432.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+        "monochromeImage": "./assets/Image/LOGO432.png"
       },
+      "icon": "./assets/Image/LOGO432.png",
       "package": "com.avante.gestao",
       "permissions": [
         "CAMERA",
@@ -39,7 +42,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "8e4744f6-9b2a-497f-99bd-f44b4a10cfb9"
+        "projectId": "Gestao"
       }
     },
     "updates": {
@@ -54,8 +57,7 @@
         "expo-notifications",
         {
           "icon": "./assets/Image/LOGO432.png",
-          "color": "#6cb6a5",
-          "sounds": ["./assets/sounds/notification.wav"]
+          "color": "#6cb6a5"
         }
       ]
     ]
