@@ -9,19 +9,34 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "resourceClass": "large"
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "resourceClass": "large"
+    },
+    "preview2": {
+      "android": {
+        "gradleCommand": ":app:assembleRelease"
       }
+    },
+    "preview3": {
+      "developmentClient": true
     },
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "apk"
-      }
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        "env": {
+          "NODE_ENV": "production"
+        }
+      },
+      "resourceClass": "large"
     }
   }
 }

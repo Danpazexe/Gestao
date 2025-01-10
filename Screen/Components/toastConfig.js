@@ -5,75 +5,107 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const AnimatedIcon = ({ name, color, type }) => {
   const scaleValue = useRef(new Animated.Value(0)).current;
+  const mounted = useRef(false);
   
   useEffect(() => {
+    mounted.current = true;
+    // Reset do valor da animação
+    scaleValue.setValue(0);
+    
     let animation;
     
     if (type === 'error') {
-      // Animação de shake para erro
       animation = Animated.sequence([
+        // Entrada com pop
         Animated.spring(scaleValue, {
           toValue: 1,
           useNativeDriver: true,
-          speed: 50,
-          bounciness: 20
+          tension: 200,
+          friction: 3
         }),
-        Animated.sequence([
-          Animated.timing(scaleValue, {
-            toValue: 1.2,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleValue, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]);
-    } else if (type === 'success') {
-      // Animação de pop para sucesso
-      animation = Animated.spring(scaleValue, {
-        toValue: 1,
-        useNativeDriver: true,
-        speed: 50,
-        bounciness: 20
-      });
-    } else {
-      // Animação de pulse para info
-      animation = Animated.sequence([
-        Animated.spring(scaleValue, {
-          toValue: 1,
-          useNativeDriver: true,
-          speed: 50,
-          bounciness: 20
-        }),
+        // Shake repetitivo
         Animated.loop(
           Animated.sequence([
             Animated.timing(scaleValue, {
-              toValue: 1.1,
-              duration: 1000,
+              toValue: 1.2,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleValue, {
+              toValue: 0.8,
+              duration: 100,
               useNativeDriver: true,
             }),
             Animated.timing(scaleValue, {
               toValue: 1,
-              duration: 1000,
+              duration: 100,
               useNativeDriver: true,
             }),
+          ]),
+          { iterations: 2 }
+        )
+      ]);
+    } else if (type === 'success') {
+      animation = Animated.sequence([
+        Animated.spring(scaleValue, {
+          toValue: 1.3,
+          useNativeDriver: true,
+          tension: 200,
+          friction: 3
+        }),
+        Animated.spring(scaleValue, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 200,
+          friction: 5
+        })
+      ]);
+    } else {
+      animation = Animated.sequence([
+        Animated.spring(scaleValue, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 200,
+          friction: 3
+        }),
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(scaleValue, {
+              toValue: 1.2,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleValue, {
+              toValue: 1,
+              duration: 500,
+              useNativeDriver: true,
+            })
           ])
-        ),
+        )
       ]);
     }
 
-    animation.start();
+    if (mounted.current) {
+      animation.start();
+    }
 
-    return () => animation.stop();
-  }, []);
+    return () => {
+      mounted.current = false;
+      animation.stop();
+      scaleValue.setValue(0);
+    };
+  }, [type, name]); // Adicionado name como dependência
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
-      <Icon name={name} size={28} color={color} />
-    </Animated.View>
+    <View style={styles.iconWrapper}>
+      <Animated.View 
+        style={{ 
+          transform: [{ scale: scaleValue }],
+        }}
+      >
+        <Icon name={name} size={32} color={color} />
+      </Animated.View>
+    </View>
   );
 };
 
@@ -89,7 +121,12 @@ export const toastConfig = {
       text2NumberOfLines={3}
       renderLeadingIcon={() => (
         <View style={styles.iconContainer}>
-          <AnimatedIcon name="check-circle" color="#fff" type="success" />
+          <AnimatedIcon 
+            key={Date.now()} // Força recriação do componente
+            name="check-circle" 
+            color="#fff" 
+            type="success" 
+          />
         </View>
       )}
     />
@@ -105,7 +142,12 @@ export const toastConfig = {
       text2NumberOfLines={3}
       renderLeadingIcon={() => (
         <View style={styles.iconContainer}>
-          <AnimatedIcon name="alert-circle" color="#fff" type="error" />
+          <AnimatedIcon 
+            key={Date.now()} // Força recriação do componente
+            name="alert-circle" 
+            color="#fff" 
+            type="error" 
+          />
         </View>
       )}
     />
@@ -121,7 +163,12 @@ export const toastConfig = {
       text2NumberOfLines={3}
       renderLeadingIcon={() => (
         <View style={styles.iconContainer}>
-          <AnimatedIcon name="information" color="#fff" type="info" />
+          <AnimatedIcon 
+            key={Date.now()} // Força recriação do componente
+            name="information" 
+            color="#fff" 
+            type="info" 
+          />
         </View>
       )}
     />
@@ -192,4 +239,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 50,
   },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10
+  }
 }); 
