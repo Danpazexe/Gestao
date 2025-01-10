@@ -9,15 +9,13 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "resourceClass": "large"
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "resourceClass": "large"
+      }
     },
     "preview2": {
       "android": {
@@ -35,8 +33,7 @@
         "env": {
           "NODE_ENV": "production"
         }
-      },
-      "resourceClass": "large"
+      }
     }
   }
 }

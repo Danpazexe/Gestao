@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "gestao",
-    "slug": "Gestao",
+    "slug": "gestao",
     "version": "0.0.26",
     "orientation": "portrait",
     "icon": "./assets/Image/LOGO1024.png",
@@ -42,7 +42,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "8e4744f6-9b2a-497f-99bd-f44b4a10cfb9"
+        "projectId": "f54a5783-0554-48b7-86bf-e0e0e57324db"
       }
     },
     "updates": {
