@@ -23,6 +23,7 @@ import RegisterScreen from './Screen/Registro/RegisterScreen';
 import ProfileScreen from "./Screen/Perfil/ProfileScreen";
 import TratarScreen from './Screen/Tratativas/TratarScreen';
 import NotifScreen from './Screen/Components/NotifScreen';
+import SqlScreen from './Screen/SQL/SqlScreen';
 
 const Stack = createStackNavigator();
 
@@ -199,6 +200,10 @@ export default function App() {
 
             <Stack.Screen name="ValiditySettings">
               {props => <NotifScreen {...props} isDarkMode={isDarkMode} />}
+            </Stack.Screen>
+
+            <Stack.Screen name="SqlScreen">
+              {props => <SqlScreen {...props} isDarkMode={isDarkMode} />}
             </Stack.Screen>
 
           </Stack.Navigator>

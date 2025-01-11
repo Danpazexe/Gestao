@@ -61,7 +61,7 @@ const HomeScreen = ({ isDarkMode }) => {
     },
     {
       title: "SQL",
-      screen: null,
+      screen: "SqlScreen",
       colorDark: "#0F766E",
       colorLight: "#0D9488",
       animation: require("../../assets/GifMenu/Bd.json"),
