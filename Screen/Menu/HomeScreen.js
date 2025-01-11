@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, SafeAre
 import LottieView from "lottie-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const HomeScreen = ({ isDarkMode }) => {
   const navigation = useNavigation();
@@ -13,65 +14,65 @@ const HomeScreen = ({ isDarkMode }) => {
     {
       title: "Lista",
       screen: "ListScreen",
-      colorDark: "#1E3A8A",
-      colorLight: "#2563EB",
-      animation: require("../../assets/GifMenu/VerLista.json"),
+      colors: ['#4481eb', '#04befe'],
+      icon: "list-alt",
+      subtitle: "Visualizar produtos"
     },
     {
       title: "Adicionar",
       screen: "AddProductScreen",
-      colorDark: "#065F46",
-      colorLight: "#059669",
-      animation: require("../../assets/GifMenu/AddProd.json"),
+      colors: ['#11998e', '#38ef7d'],
+      icon: "add-circle",
+      subtitle: "Novo produto"
     },
     {
       title: "Dashboard",
       screen: "DashboardScreen",
-      colorDark: "#991B1B",
-      colorLight: "#DC2626",
-      animation: require("../../assets/GifMenu/Dash.json"),
+      colors: ['#eb3349', '#f45c43'],
+      icon: "dashboard",
+      subtitle: "Análise de dados"
     },
     {
       title: "Tratativas",
       screen: "TratarScreen",
-      colorDark: "#92400E",
-      colorLight: "#D97706",
-      animation: require("../../assets/GifMenu/Tratar.json"),
+      colors: ['#f2994a', '#f2c94c'],
+      icon: "assignment",
+      subtitle: "Produtos tratados"
     },
     {
       title: "Excel",
       screen: "ExcelScreen",
-      colorDark: "#294380",
-      colorLight: "#012677",
-      animation: require("../../assets/GifMenu/Excel.json"),
+      colors: ['#2193b0', '#6dd5ed'],
+      icon: "table-chart",
+      subtitle: "Exportar dados"
     },
     {
       title: "Perfil",
       screen: "ProfileScreen",
-      colorDark: "#5B21B6",
-      colorLight: "#7C3AED",
-      animation: require("../../assets/GifMenu/Profile.json"),
+      colors: ['#834d9b', '#d04ed6'],
+      icon: "person",
+      subtitle: "Suas informações"
     },
     {
       title: "Config",
       screen: "SettingsScreen",
-      colorDark: "#374151",
-      colorLight: "#4B5563",
-      animation: require("../../assets/GifMenu/Config.json"),
+      colors: ['#4b6cb7', '#182848'],
+      icon: "settings",
+      subtitle: "Configurações do app"
     },
     {
       title: "SQL",
       screen: "SqlScreen",
-      colorDark: "#0F766E",
-      colorLight: "#0D9488",
-      animation: require("../../assets/GifMenu/Bd.json"),
+      colors: ['#11998e', '#38ef7d'],
+      icon: "storage",
+      subtitle: "Banco de dados"
     },
     {
       title: "Ajustando",
       screen: null,
-      colorDark: "#955239",
-      colorLight: "#be5e46",
-      animation: require("../../assets/GifMenu/Build.json"),
+      colors: ['#636363', '#a2ab58'],
+      icon: "build",
+      subtitle: "Em desenvolvimento"
     },
   ]);
 
@@ -105,20 +106,20 @@ const HomeScreen = ({ isDarkMode }) => {
       return Animated.parallel([
         Animated.timing(anim.opacity, {
           toValue: 1,
-          duration: 500,
-          delay: index * 100,
+          duration: 600,
+          delay: index * 120,
           useNativeDriver: true,
         }),
         Animated.timing(anim.translateY, {
           toValue: 0,
-          duration: 500,
-          delay: index * 100,
+          duration: 600,
+          delay: index * 120,
           useNativeDriver: true,
         })
       ]);
     });
 
-    Animated.stagger(50, animations).start();
+    Animated.stagger(60, animations).start();
   }, []);
 
   const handleNavigation = (screen) => {
@@ -129,10 +130,10 @@ const HomeScreen = ({ isDarkMode }) => {
   const handlePressIn = (index) => {
     setPressedButton(index);
     Animated.spring(buttonAnimations[index].scale, {
-      toValue: 0.95,
+      toValue: 0.96,
       useNativeDriver: true,
-      speed: 20,
-      bounciness: 4,
+      speed: 25,
+      bounciness: 3,
     }).start();
   };
 
@@ -155,6 +156,7 @@ const HomeScreen = ({ isDarkMode }) => {
     },
     scrollViewContent: {
       padding: 16,
+      paddingBottom: 32,
     },
     container: {
       flex: 1,
@@ -165,60 +167,74 @@ const HomeScreen = ({ isDarkMode }) => {
       backgroundColor: "#111827",
     },
     lightBackground: {
-      backgroundColor: "#F3F4F6",
+      backgroundColor: "#F8FAFC",
     },
     darkText: {
-      color: "#EAEAEA",
+      color: "#F1F5F9",
     },
     lightText: {
-      color: "rgb(48, 48, 48)",
+      color: "#1E293B",
     },
     title: {
-      fontSize: 32,
-      fontWeight: "700",
-      textAlign: "center",
-      marginVertical: 24,
+      fontSize: 38,
+      fontWeight: "800",
+      textAlign: "left",
+      marginVertical: 8,
+      letterSpacing: 0.5,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: '#666',
+      textAlign: 'left',
+      letterSpacing: 0.5,
     },
     gridContainer: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      justifyContent: "space-between",
-      paddingHorizontal: 8,
+      flexDirection: "column",
+      padding: 20,
+      paddingTop: 10,
     },
     cardContainer: {
-      width: '46%',
-      aspectRatio: 1,
-      marginBottom: 16,
-      marginHorizontal: '2%',
-    },
-    button: {
-      flex: 1,
-      borderRadius: 12,
-      padding: 16,
-      alignItems: "center",
-      justifyContent: "center",
+      width: '100%',
+      height: 120,
+      marginBottom: 25,
+      borderRadius: 28,
+      overflow: 'hidden',
       shadowColor: "#000",
       shadowOffset: {
         width: 0,
-        height: 2,
+        height: 10,
       },
       shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
+      shadowRadius: 15,
+      elevation: 12,
+    },
+    button: {
+      flex: 1,
+      flexDirection: 'row',
+      borderRadius: 28,
+      padding: 28,
+      paddingHorizontal: 32,
+      alignItems: "center",
+      justifyContent: 'space-between',
+      minHeight: 120,
     },
     icon: {
-      width: 50,
-      height: 50,
-      marginBottom: 12,
+      width: 70,
+      height: 70,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 'auto',
+      borderRadius: 22,
     },
     buttonTitle: {
-      fontSize: 15,
-      fontWeight: "600",
+      fontSize: 22,
+      fontWeight: "700",
       color: "#FFFFFF",
-      textAlign: "center",
-      textShadowColor: 'rgba(0, 0, 0, 0.3)',
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 2,
+      letterSpacing: 0.7,
+      textShadowColor: 'rgba(0, 0, 0, 0.2)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 3,
+      marginBottom: 6,
     },
     menuItem: {
       flexDirection: 'row',
@@ -236,6 +252,29 @@ const HomeScreen = ({ isDarkMode }) => {
       fontSize: 16,
       fontWeight: '600',
     },
+    darkButton: {
+      backgroundColor: '#1F2937',
+    },
+    darkButtonTitle: {
+      color: '#FFFFFF',
+    },
+    titleContainer: {
+      flexDirection: 'column',
+      flex: 1,
+      paddingRight: 20,
+    },
+    buttonSubtitle: {
+      fontSize: 15,
+      color: 'rgba(255, 255, 255, 0.85)',
+      letterSpacing: 0.5,
+      textShadowColor: 'rgba(0, 0, 0, 0.1)',
+      textShadowOffset: { width: 0.5, height: 0.5 },
+      textShadowRadius: 2,
+    },
+    headerContainer: {
+      marginBottom: 35,
+      paddingHorizontal: 20,
+    },
   });
 
   return (
@@ -247,18 +286,21 @@ const HomeScreen = ({ isDarkMode }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollViewContent}
       >
-        <Animated.Text 
-          style={[
-            styles.title, 
-            isDarkMode ? styles.darkText : styles.lightText,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY }]
-            }
-          ]}
-        >
-          Menu
-        </Animated.Text>
+        <View style={styles.headerContainer}>
+          <Animated.Text 
+            style={[
+              styles.title, 
+              isDarkMode ? styles.darkText : styles.lightText,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY }]
+              }
+            ]}
+          >
+            Menu Principal
+          </Animated.Text>
+          <Text style={styles.subtitle}>Selecione uma opção</Text>
+        </View>
         <View style={styles.gridContainer}>
           {buttons.map((button, index) => {
             const animatedStyle = {
@@ -275,25 +317,42 @@ const HomeScreen = ({ isDarkMode }) => {
                 style={[styles.cardContainer, animatedStyle]}
               >
                 <TouchableOpacity
-                  style={[
-                    styles.button,
-                    {
-                      backgroundColor: isDarkMode ? button.colorDark : button.colorLight,
-                    },
-                  ]}
+                  style={{ width: '100%', height: '100%' }}
                   onPressIn={() => handlePressIn(index)}
                   onPressOut={() => handlePressOut(index)}
                   onPress={() => button.screen && handleNavigation(button.screen)}
                   activeOpacity={0.7}
                 >
-                  <LottieView
-                    source={button.animation}
-                    style={styles.icon}
-                    autoPlay
-                    loop
-                    speed={0.5}
-                  />
-                  <Text style={styles.buttonTitle}>{button.title}</Text>
+                  <LinearGradient
+                    colors={button.colors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[
+                      styles.button,
+                      {
+                        shadowColor: button.colors[0],
+                        shadowOffset: {
+                          width: 0,
+                          height: 4,
+                        },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 4.65,
+                        elevation: 8,
+                      }
+                    ]}
+                  >
+                    <View style={styles.titleContainer}>
+                      <Text style={styles.buttonTitle}>{button.title}</Text>
+                      <Text style={styles.buttonSubtitle}>{button.subtitle}</Text>
+                    </View>
+                    <View style={styles.icon}>
+                      <MaterialIcons 
+                        name={button.icon} 
+                        size={68} 
+                        color="#FFFFFF" 
+                      />
+                    </View>
+                  </LinearGradient>
                 </TouchableOpacity>
               </Animated.View>
             );
