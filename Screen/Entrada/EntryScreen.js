@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, Animated, ImageBackground, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Animated, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
@@ -11,18 +11,20 @@ const LoadingIndicator = () => (
       <Animatable.View
         key={i}
         animation={{
-          0: { scale: 1 },
-          0.5: { scale: 1.5 },
-          1: { scale: 1 }
+          0: { scale: 1, opacity: 0.3 },
+          0.5: { scale: 1.3, opacity: 1 },
+          1: { scale: 1, opacity: 0.3 }
         }}
-        duration={1000}
-        delay={i * 200}
+        duration={1500}
+        delay={i * 300}
         easing="ease-in-out"
         iterationCount="infinite"
-        style={[styles.loadingDot, { marginHorizontal: 5 }]}
+        style={[styles.loadingDot]}
       >
         <LinearGradient
-          colors={['#4a90e2', '#357abd']}
+          colors={['#4a90e2', '#357abd', '#1e5799']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={styles.dot}
         />
       </Animatable.View>
@@ -37,21 +39,29 @@ const EntryScreen = () => {
 
   useEffect(() => {
     navigation.setOptions({ headerShown: false });
-    
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 2000,
-      useNativeDriver: true,
-    }).start();
+
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: true,
+      })
+    ]).start();
 
     setTimeout(() => {
       setIsLoading(false);
-    }, 4000);
+    }, 3500);
   }, []);
 
   useEffect(() => {
     if (!isLoading) {
-      navigation.navigate('LoginScreen');
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        navigation.navigate('LoginScreen');
+      });
     }
   }, [isLoading]);
 
@@ -60,61 +70,42 @@ const EntryScreen = () => {
       <ImageBackground
         source={require('../../assets/Image/FUNDOAPP.png')}
         style={styles.backgroundImage}
-        blurRadius={1}
+        blurRadius={4}
       >
         <LinearGradient
-          colors={['rgba(0, 0, 0, 0.5)', 'rgba(0, 0, 0, 0.85)']}
+          colors={['rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.9)']}
           style={styles.gradient}
         >
-          <Animated.View 
-            style={[styles.content, { opacity: fadeAnim }]}
-          >
-            <Animatable.Image 
-              animation="zoomIn"
-              duration={2000}
-              source={require('../../assets/Image/LOGO.png')} 
+          <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+            <Animatable.Image
+              animation="bounceIn"
+              duration={1500}
+              source={require('../../assets/Image/LOGO.png')}
               style={styles.logo}
             />
-            <Animatable.Text 
+            <Animatable.Text
               animation="fadeInUp"
-              delay={1000}
+              delay={800}
               style={styles.title}
             >
               Bem-vindo ao Gestão+
             </Animatable.Text>
-            
-            {isLoading ? (
+
+            {isLoading && (
               <>
                 <LoadingIndicator />
-                <Animatable.Text 
+                <Animatable.View
                   animation="fadeIn"
-                  delay={1500}
-                  style={styles.versionInfo}
+                  delay={1200}
+                  style={styles.infoContainer}
                 >
-                  Versão {appInfo.expo.version}
-                </Animatable.Text>
-                <Animatable.Text 
-                  animation="fadeIn"
-                  delay={2000}
-                  style={styles.developerInfo}
-                >
-                  Desenvolvido por Daniel Paz
-                </Animatable.Text>
-              </>
-            ) : (
-              <>
-                <Animatable.Text 
-                  animation="fadeIn"
-                  style={styles.versionInfo}
-                >
-                  Versão {appInfo.expo.version}
-                </Animatable.Text>
-                <Animatable.Text 
-                  animation="fadeIn"
-                  style={styles.developerInfo}
-                >
-                  Desenvolvido por Daniel Paz
-                </Animatable.Text>
+                  <Text style={styles.versionInfo}>
+                    Versão {appInfo.expo.version}
+                  </Text>
+                  <Text style={styles.developerInfo}>
+                    Desenvolvido por Daniel Paz
+                  </Text>
+                </Animatable.View>
               </>
             )}
           </Animated.View>
@@ -142,18 +133,18 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    width: '100%',
+    width: '90%',
     paddingHorizontal: 20,
   },
   logo: {
     width: '80%',
     height: undefined,
-    aspectRatio: 314 / 222,
+    aspectRatio: 1,
     resizeMode: 'contain',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 30,
+    fontWeight: '600',
     color: '#FFFFFF',
     marginTop: 30,
     textAlign: 'center',
@@ -163,47 +154,40 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flexDirection: 'row',
-    marginTop: 40,
+    marginTop: 50,
     height: 40,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   loadingDot: {
-    width: 10,
-    height: 10,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   dot: {
     flex: 1,
-    borderRadius: 5,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderRadius: 6,
+  },
+  infoContainer: {
+    marginTop: 40,
+    alignItems: 'center',
   },
   versionInfo: {
     fontSize: 16,
     color: '#FFFFFF',
-    marginTop: 30,
     opacity: 0.9,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
     textAlign: 'center',
   },
   developerInfo: {
     fontSize: 14,
     color: '#FFFFFF',
-    marginTop: 10,
+    marginTop: 8,
     opacity: 0.8,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
     textAlign: 'center',
-    fontStyle: 'italic'
-  }
+    fontStyle: 'italic',
+  },
 });
 
 export default EntryScreen;

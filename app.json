@@ -52,7 +52,6 @@
     "privacy": "public",
     "githubUrl": "https://github.com/usuario/gestao",
     "plugins": [
-      "expo-local-authentication",
       [
         "expo-notifications",
         {
