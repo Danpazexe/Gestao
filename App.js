@@ -19,7 +19,6 @@ import SettingsScreen from './Screen/Opçoes/SettingsScreen';
 import DashboardScreen from './Screen/Dashboard/DashboardScreen';
 import ExcelScreen from './Screen/Excel/ExcelScreen';
 import LoginScreen from './Screen/Entrada/LoginScreen';
-import RegisterScreen from './Screen/Registro/RegisterScreen';
 import ProfileScreen from "./Screen/Perfil/ProfileScreen";
 import TratarScreen from './Screen/Tratativas/TratarScreen';
 import NotifScreen from './Screen/Components/NotifScreen';
@@ -180,10 +179,6 @@ export default function App() {
 
             <Stack.Screen name="LoginScreen" options={{ headerShown: false }}>
               {props => <LoginScreen {...props} isDarkMode={isDarkMode} />}
-            </Stack.Screen>
-
-            <Stack.Screen name="RegisterScreen" options={{ headerShown: false }}>
-              {props => <RegisterScreen {...props} isDarkMode={isDarkMode} />}
             </Stack.Screen>
 
             <Stack.Screen name="BarcodeScannerScreen">

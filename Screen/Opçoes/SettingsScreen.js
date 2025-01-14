@@ -143,12 +143,40 @@ const SettingsScreen = ({ isDarkMode, setIsDarkMode, navigation }) => {
   };
 
   const toggleBiometric = async () => {
-    const compatible = await LocalAuthentication.hasHardwareAsync();
-    if (compatible) {
-      setBiometricEnabled(!isBiometricEnabled);
-      saveSettings('biometric', !isBiometricEnabled);
-    } else {
-      Alert.alert('Erro', 'Seu dispositivo não suporta autenticação biométrica');
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      
+      if (compatible && enrolled) {
+        // Verifica se existem credenciais salvas
+        const savedEmail = await AsyncStorage.getItem('savedEmail');
+        const savedPassword = await AsyncStorage.getItem('savedPassword');
+        
+        if (savedEmail && savedPassword) {
+          const newValue = !isBiometricEnabled;
+          setBiometricEnabled(newValue);
+          await AsyncStorage.setItem('biometricEnabled', newValue.toString());
+          
+          Toast.show({
+            type: 'success',
+            text1: 'Biometria',
+            text2: newValue ? 'Ativada com sucesso!' : 'Desativada com sucesso!',
+          });
+        } else {
+          Alert.alert(
+            'Configuração Necessária',
+            'Para usar a biometria, você precisa primeiro fazer login e ativar "Lembrar-me"'
+          );
+        }
+      } else {
+        Alert.alert(
+          'Não Disponível',
+          'Seu dispositivo não suporta ou não tem biometria configurada'
+        );
+      }
+    } catch (error) {
+      console.error('Erro ao configurar biometria:', error);
+      Alert.alert('Erro', 'Não foi possível configurar a biometria');
     }
   };
 

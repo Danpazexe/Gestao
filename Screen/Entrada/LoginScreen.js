@@ -1,5 +1,5 @@
 // LoginScreen.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,10 +10,18 @@ import {
   ScrollView,
   ImageBackground,
   ActivityIndicator,
+  Dimensions,
+  Animated,
+  Keyboard,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
+
+const { width } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
   // Estados
@@ -23,144 +31,274 @@ const LoginScreen = ({ navigation }) => {
   const [passwordError, setPasswordError] = useState("");
   const [secureText, setSecureText] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockTimer, setBlockTimer] = useState(0);
+  
+  // Animações
+  const fadeAnim = new Animated.Value(0);
+  const slideAnim = new Animated.Value(50);
+  const shakeAnimation = new Animated.Value(0);
 
-  // Função de validação de email
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  // Verificar suporte biométrico
+  useEffect(() => {
+    checkBiometricSupport();
+    loadSavedCredentials();
+    startAnimations();
+  }, []);
+
+  const startAnimations = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
-  // Função de validação de senha
-  const validatePassword = (password) => {
-    // Verifica se a senha tem pelo menos 6 caracteres
-    return password.length >= 6;
+  const checkBiometricSupport = async () => {
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      
+      // Só habilita se o dispositivo for compatível E tiver biometria cadastrada
+      setBiometricSupported(compatible && enrolled);
+      
+      // Verificar se já existe login salvo para habilitar biometria
+      const savedEmail = await AsyncStorage.getItem('savedEmail');
+      const savedPassword = await AsyncStorage.getItem('savedPassword');
+      
+      if (savedEmail && savedPassword) {
+        // Tenta autenticação biométrica automaticamente
+        handleBiometricAuth();
+      }
+    } catch (error) {
+      console.error('Erro ao verificar suporte biométrico:', error);
+    }
   };
 
-  // Função de login
-  const handleLogin = async () => {
-    console.log("[LoginScreen] Iniciando o processo de login...");
+  const loadSavedCredentials = async () => {
+    try {
+      const savedEmail = await AsyncStorage.getItem('savedEmail');
+      const savedRememberMe = await AsyncStorage.getItem('rememberMe');
+      
+      if (savedEmail && savedRememberMe === 'true') {
+        setEmail(savedEmail);
+        setRememberMe(true);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar credenciais:', error);
+    }
+  };
 
-    // Validações
-    if (!email.trim()) {
-      setEmailError("Por favor, insira seu email.");
+  const handleBiometricAuth = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Login com biometria',
+        cancelLabel: 'Cancelar',
+        disableDeviceFallback: false,
+        fallbackLabel: 'Usar senha',
+      });
+
+      if (result.success) {
+        const savedEmail = await AsyncStorage.getItem('savedEmail');
+        const savedPassword = await AsyncStorage.getItem('savedPassword');
+        
+        if (savedEmail && savedPassword) {
+          // Login automático com credenciais salvas
+          handleLogin(savedEmail, savedPassword);
+        } else {
+          Toast.show({
+            type: 'info',
+            text1: 'Configuração Necessária',
+            text2: 'Faça login primeiro para usar a biometria',
+          });
+        }
+      } else {
+        // Usuário cancelou ou falhou
+        Toast.show({
+          type: 'info',
+          text1: 'Autenticação Cancelada',
+          text2: 'Use seu email e senha para entrar',
+        });
+      }
+    } catch (error) {
+      console.error('Erro na autenticação biométrica:', error);
       Toast.show({
         type: 'error',
         text1: 'Erro',
-        text2: 'Por favor, insira seu email.',
+        text2: 'Não foi possível usar a biometria',
       });
-      return;
     }
-    if (!validateEmail(email.trim())) {
-      setEmailError("Por favor, insira um email válido.");
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'Por favor, insira um email válido.',
-      });
-      return;
-    }
-    if (!password.trim()) {
-      setPasswordError("Por favor, insira a senha.");
-      return;
-    }
-    if (!validatePassword(password)) {
-      setPasswordError("A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
+  };
 
-    // Resetando erros
-    setEmailError("");
-    setPasswordError("");
+  const saveCredentials = async () => {
+    try {
+      if (rememberMe) {
+        await AsyncStorage.setItem('savedEmail', email);
+        await AsyncStorage.setItem('savedPassword', password);
+        await AsyncStorage.setItem('rememberMe', 'true');
+        
+        // Verificar se pode habilitar biometria
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        
+        if (compatible && enrolled) {
+          Alert.alert(
+            'Biometria',
+            'Deseja habilitar o login com impressão digital?',
+            [
+              {
+                text: 'Não',
+                style: 'cancel'
+              },
+              {
+                text: 'Sim',
+                onPress: async () => {
+                  await AsyncStorage.setItem('biometricEnabled', 'true');
+                  setBiometricSupported(true);
+                }
+              }
+            ]
+          );
+        }
+      } else {
+        await AsyncStorage.multiRemove(['savedEmail', 'savedPassword', 'rememberMe', 'biometricEnabled']);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar credenciais:', error);
+    }
+  };
+
+  const handleLogin = async (customEmail = email, customPassword = password) => {
+    Keyboard.dismiss();
+    
+    if (!validateFields(customEmail, customPassword)) return;
+
     setIsLoading(true);
 
     try {
-      // Verifica o login fixo
-      if (email.trim().toLowerCase() === "admin@gmail.com" && password === "123456") {
-        Toast.show({
-          type: 'success',
-          text1: 'Sucesso',
-          text2: 'Bem-vindo ao aplicativo!',
-        });
-        navigation.navigate("HomeScreen");
+      // Login fixo para admin
+      if (customEmail.trim().toLowerCase() === "admin@gmail.com" && customPassword === "123456") {
+        await handleSuccessfulLogin();
         return;
       }
 
-      // Caso contrário, tenta a autenticação com a API
+      // Tentativa de login com API
       const response = await axios.post(
         "https://api.gestao.aviait.com.br/sessions",
         {
-          email: email.trim(),
-          password: password.trim(),
+          email: customEmail.trim(),
+          password: customPassword.trim(),
         },
         {
           headers: { "Content-Type": "application/json" },
         }
       );
 
-      console.log("[LoginScreen] Resposta recebida da API:", response.data);
-
-      if (
-        response.status === 200 &&
-        response.data.message === "User authenticated successfully"
-      ) {
-        Toast.show({
-          type: 'success',
-          text1: 'Sucesso',
-          text2: 'Bem-vindo ao aplicativo!',
-        });
-        navigation.navigate("HomeScreen");
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Erro no Login',
-          text2: 'Credenciais incorretas. Tente novamente.',
-        });
-        console.error("[LoginScreen] Erro: Credenciais incorretas.");
+      if (response.status === 200) {
+        await handleSuccessfulLogin();
       }
     } catch (error) {
-      console.error("[LoginScreen] Erro ao se comunicar com o servidor:", error.message);
-      Toast.show({
-        type: 'error',
-        text1: 'Erro no Login',
-        text2: 'Não foi possível se conectar ao servidor.',
-      });
+      handleLoginError(error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Função para renderizar campos de input
-  const renderInputField = (placeholder, value, setValue, error, setError, secureText = false, icon) => (
-    <View style={styles.inputWrapper}>
-      <View style={[styles.inputContainer, error && styles.inputError]}>
-        <Icon name={icon} size={20} color="#0367A6" style={styles.inputIcon} />
-        <TextInput
-          style={styles.input}
-          placeholder={placeholder}
-          placeholderTextColor="#A0A0A0"
-          value={value}
-          onChangeText={(text) => {
-            setValue(text);
-            if (error) setError("");
-          }}
-          secureTextEntry={secureText}
-        />
-        {placeholder === "Senha" && (
-          <TouchableOpacity
-            style={styles.eyeIcon}
-            onPress={() => setSecureText(!secureText)}
-          >
-            <Icon
-              name={secureText ? "eye" : "eye-off"}
-              size={22}
-              color="#0367A6"
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
-  );
+  const validateFields = (email, password) => {
+    if (!email.trim() || !validateEmail(email.trim())) {
+      setEmailError("Email inválido");
+      return false;
+    }
+    if (!password.trim() || password.length < 6) {
+      setPasswordError("Senha deve ter no mínimo 6 caracteres");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSuccessfulLogin = async () => {
+    await saveCredentials();
+    Toast.show({
+      type: 'success',
+      text1: 'Bem-vindo!',
+      text2: 'Login realizado com sucesso',
+    });
+    navigation.navigate("HomeScreen");
+  };
+
+  const handleLoginError = (error) => {
+    shakeForm();
+    setLoginAttempts(prev => prev + 1);
+    
+    if (loginAttempts >= 2) { // Bloqueia após 3 tentativas
+      setIsBlocked(true);
+      setBlockTimer(30); // 30 segundos de bloqueio
+      
+      const interval = setInterval(() => {
+        setBlockTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setIsBlocked(false);
+            setLoginAttempts(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Login Bloqueado',
+        text2: `Tente novamente em ${blockTimer} segundos`,
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Erro no Login',
+        text2: `Tentativa ${loginAttempts + 1} de 3`,
+      });
+    }
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const shakeForm = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -10,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true
+      })
+    ]).start();
+  };
 
   return (
     <ImageBackground
@@ -169,40 +307,137 @@ const LoginScreen = ({ navigation }) => {
       resizeMode="cover"
     >
       <View style={styles.overlay}>
-        <View style={styles.topSection}>
+        <Animated.View 
+          style={[
+            styles.topSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
           <Image
             source={require("../../assets/Image/LOGOCOMFRASE.png")}
             style={styles.icon}
           />
-        </View>
+        </Animated.View>
 
-        <ScrollView contentContainerStyle={styles.formContainer}>
-          <View style={styles.formBox}>
+        <ScrollView 
+          contentContainerStyle={styles.formContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View 
+            style={[
+              styles.formBox,
+              {
+                opacity: fadeAnim,
+                transform: [
+                  { translateY: slideAnim },
+                  { translateX: shakeAnimation }
+                ]
+              }
+            ]}
+          >
             <Text style={styles.title}>Bem-vindo</Text>
             <Text style={styles.subtitle}>Faça login para continuar</Text>
 
-            {renderInputField("Email", email, setEmail, emailError, setEmailError, false, "email")}
-            {renderInputField("Senha", password, setPassword, passwordError, setPasswordError, secureText, "lock")}
+            <View style={styles.inputWrapper}>
+              <View style={[styles.inputContainer, emailError && styles.inputError]}>
+                <Icon name="email" size={20} color="#0367A6" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor="#A0A0A0"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    setEmailError("");
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <View style={[styles.inputContainer, passwordError && styles.inputError]}>
+                <Icon name="lock" size={20} color="#0367A6" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Senha"
+                  placeholderTextColor="#A0A0A0"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setPasswordError("");
+                  }}
+                  secureTextEntry={secureText}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setSecureText(!secureText)}
+                >
+                  <Icon
+                    name={secureText ? "eye" : "eye-off"}
+                    size={22}
+                    color="#0367A6"
+                  />
+                </TouchableOpacity>
+              </View>
+              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            </View>
+
+            {isBlocked && (
+              <View style={styles.blockedContainer}>
+                <Icon name="lock-clock" size={24} color="#FF6B6B" />
+                <Text style={styles.blockedText}>
+                  Tente novamente em {blockTimer}s
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.optionsContainer}>
+              <TouchableOpacity 
+                style={styles.checkboxContainer}
+                onPress={() => setRememberMe(!rememberMe)}
+              >
+                <Icon
+                  name={rememberMe ? "checkbox-marked" : "checkbox-blank-outline"}
+                  size={24}
+                  color="#0367A6"
+                />
+                <Text style={styles.checkboxText}>Lembrar-me</Text>
+              </TouchableOpacity>
+
+              {biometricSupported && (
+                <TouchableOpacity 
+                  style={styles.biometricButton}
+                  onPress={handleBiometricAuth}
+                >
+                  <Icon name="fingerprint" size={24} color="#0367A6" />
+                </TouchableOpacity>
+              )}
+            </View>
 
             <TouchableOpacity
-              style={styles.loginButton}
-              onPress={handleLogin}
-              disabled={isLoading}
+              style={[
+                styles.loginButton,
+                isBlocked && styles.loginButtonDisabled
+              ]}
+              onPress={() => handleLogin()}
+              disabled={isLoading || isBlocked}
             >
               {isLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.loginButtonText}>Entrar</Text>
+                <Text style={styles.loginButtonText}>
+                  {isBlocked ? `Bloqueado (${blockTimer}s)` : 'Entrar'}
+                </Text>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate("RegisterScreen")}>
-              <Text style={styles.linkText}>
-                Não tem uma conta?{" "}
-                <Text style={styles.signupText}>Cadastre-se</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
+          </Animated.View>
         </ScrollView>
       </View>
     </ImageBackground>
@@ -295,6 +530,34 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginLeft: 10,
   },
+  optionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8FF',
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0367A6',
+  },
+  checkboxText: {
+    marginLeft: 8,
+    color: "#666",
+    fontSize: 14,
+  },
+  biometricButton: {
+    padding: 8,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0367A6',
+  },
   loginButton: {
     height: 55,
     backgroundColor: "#0367A6",
@@ -316,18 +579,27 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  linkText: {
-    marginTop: 20,
-    fontSize: 15,
-    color: "#666",
-    textAlign: 'center',
-  },
-  signupText: {
-    color: "#0367A6",
-    fontWeight: "bold",
-  },
   eyeIcon: {
     padding: 10,
+  },
+  blockedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    padding: 10,
+    backgroundColor: '#FFE8E8',
+    borderRadius: 8,
+  },
+  blockedText: {
+    marginLeft: 8,
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+    shadowOpacity: 0.1,
   },
 });
 
