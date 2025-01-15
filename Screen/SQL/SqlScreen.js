@@ -535,15 +535,29 @@ const SqlScreen = ({ isDarkMode, navigation }) => {
   };
 
   const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
     setIsLoading(true);
+    
     try {
-      await setDados(dadosIniciais);
-      applyFilters();
+      const cached = await AsyncStorage.getItem('cached_products');
+      if (cached) {
+        const parsedCache = JSON.parse(cached);
+        setDados(parsedCache);
+        setFilteredDados(parsedCache); // Atualiza também os dados filtrados
+      } else {
+        setDados(dadosIniciais);
+        setFilteredDados(dadosIniciais); // Atualiza também os dados filtrados
+        await AsyncStorage.setItem('cached_products', JSON.stringify(dadosIniciais));
+      }
+      
       Alert.alert('Sucesso', 'Dados atualizados com sucesso!');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível atualizar os dados');
+      console.error('Erro ao atualizar:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar os dados: ' + error.message);
+    } finally {
+      setRefreshing(false);
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const exportData = async (format) => {
@@ -566,14 +580,28 @@ const SqlScreen = ({ isDarkMode, navigation }) => {
       const fileName = `produtos_filtrados_${timestamp}.json`;
       const fileString = JSON.stringify(filteredDados, null, 2);
       
+      // Garante que o diretório existe
+      const dirInfo = await FileSystem.getInfoAsync(FileSystem.documentDirectory);
+      if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(FileSystem.documentDirectory);
+      }
+      
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-      await FileSystem.writeAsStringAsync(fileUri, fileString);
+      await FileSystem.writeAsStringAsync(fileUri, fileString, {
+        encoding: FileSystem.EncodingType.UTF8
+      });
       
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Exportar dados filtrados'
+        });
+      } else {
+        Alert.alert('Erro', 'Compartilhamento não disponível neste dispositivo');
       }
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível exportar os dados');
+      console.error('Erro ao exportar:', error);
+      Alert.alert('Erro', 'Não foi possível exportar os dados: ' + error.message);
     }
   };
 
@@ -598,21 +626,72 @@ const SqlScreen = ({ isDarkMode, navigation }) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/json',
+        copyToCacheDirectory: true
       });
 
-      if (result.type === 'success') {
-        const content = await FileSystem.readAsStringAsync(result.uri);
-        const parsedData = JSON.parse(content);
+      if (!result.canceled && result.assets && result.assets[0]) {
+        // Novo formato do DocumentPicker
+        const file = result.assets[0];
         
-        if (Array.isArray(parsedData)) {
-          setDados(parsedData);
-          Alert.alert('Sucesso', 'Dados importados com sucesso');
-        } else {
-          Alert.alert('Erro', 'Formato de arquivo inválido');
+        try {
+          const content = await FileSystem.readAsStringAsync(file.uri);
+          const parsedData = JSON.parse(content);
+          
+          if (Array.isArray(parsedData) && parsedData.length > 0) {
+            // Validação básica da estrutura dos dados
+            const isValidStructure = parsedData.every(item => 
+              item.hasOwnProperty('CODPROD') && 
+              item.hasOwnProperty('DESCRICAO') &&
+              item.hasOwnProperty('MARCA')
+            );
+
+            if (isValidStructure) {
+              await AsyncStorage.setItem('cached_products', JSON.stringify(parsedData));
+              setDados(parsedData);
+              setFilteredDados(parsedData); // Atualiza também os dados filtrados
+              Alert.alert('Sucesso', `${parsedData.length} produtos importados com sucesso`);
+            } else {
+              Alert.alert('Erro', 'O arquivo não contém a estrutura de dados esperada');
+            }
+          } else {
+            Alert.alert('Erro', 'O arquivo não contém uma lista válida de produtos');
+          }
+        } catch (parseError) {
+          console.error('Erro ao processar arquivo:', parseError);
+          Alert.alert('Erro', 'O arquivo selecionado não é um JSON válido');
+        }
+      } else if (result.type === 'success') {
+        // Formato antigo do DocumentPicker
+        try {
+          const content = await FileSystem.readAsStringAsync(result.uri);
+          const parsedData = JSON.parse(content);
+          
+          if (Array.isArray(parsedData) && parsedData.length > 0) {
+            const isValidStructure = parsedData.every(item => 
+              item.hasOwnProperty('CODPROD') && 
+              item.hasOwnProperty('DESCRICAO') &&
+              item.hasOwnProperty('MARCA')
+            );
+
+            if (isValidStructure) {
+              await AsyncStorage.setItem('cached_products', JSON.stringify(parsedData));
+              setDados(parsedData);
+              setFilteredDados(parsedData); // Atualiza também os dados filtrados
+              Alert.alert('Sucesso', `${parsedData.length} produtos importados com sucesso`);
+            } else {
+              Alert.alert('Erro', 'O arquivo não contém a estrutura de dados esperada');
+            }
+          } else {
+            Alert.alert('Erro', 'O arquivo não contém uma lista válida de produtos');
+          }
+        } catch (parseError) {
+          console.error('Erro ao processar arquivo:', parseError);
+          Alert.alert('Erro', 'O arquivo selecionado não é um JSON válido');
         }
       }
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível importar os dados');
+      console.error('Erro ao importar:', error);
+      Alert.alert('Erro', 'Não foi possível importar os dados: ' + error.message);
     }
   };
 
@@ -745,6 +824,28 @@ const SqlScreen = ({ isDarkMode, navigation }) => {
   const addToHistory = (query) => {
     setSearchHistory(prev => [query, ...prev.slice(0, 4)]);
   };
+
+  // Carregamento inicial dos dados
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const cached = await AsyncStorage.getItem('cached_products');
+        if (cached) {
+          setDados(JSON.parse(cached));
+        } else {
+          setDados(dadosIniciais);
+          await cacheData(dadosIniciais);
+        }
+        applyFilters();
+      } catch (error) {
+        console.error('Erro ao carregar dados iniciais:', error);
+        setDados(dadosIniciais);
+        applyFilters();
+      }
+    };
+
+    loadInitialData();
+  }, []);
 
   return (
     <>
