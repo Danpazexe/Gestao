@@ -150,10 +150,13 @@ const TreatmentModal = ({
           </View>
 
           <Pressable
-            style={[styles.cancelButton, isDarkMode && styles.darkCancelButton]}
+            style={[
+              styles.treatmentCancelButton,
+              isDarkMode && styles.darkTreatmentCancelButton
+            ]}
             onPress={onClose}
           >
-            <Text style={[styles.cancelButtonText, isDarkMode && styles.darkText]}>
+            <Text style={styles.treatmentCancelButtonText}>
               Cancelar
             </Text>
           </Pressable>
@@ -912,7 +915,10 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
               <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>
                 Confirmar Exclusão
               </Text>
-              <Text style={[styles.productName, isDarkMode && { color: '#999' }]} numberOfLines={2}>
+              <Text 
+                style={[styles.productName, isDarkMode && { color: '#999' }]} 
+                numberOfLines={2}
+              >
                 {productToDelete?.descricao}
               </Text>
             </View>
@@ -923,19 +929,21 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
 
             <View style={styles.confirmationButtons}>
               <Pressable
-                style={[styles.confirmationButton, styles.cancelButton]}
+                style={styles.confirmationCancelButton}
                 onPress={() => {
                   setDeleteConfirmationVisible(false);
                   setProductToDelete(null);
                 }}
+                android_ripple={{ color: 'rgba(255,255,255,0.1)' }}
               >
                 <MaterialIcons name="close" size={24} color="#FFF" />
                 <Text style={styles.confirmationButtonText}>Cancelar</Text>
               </Pressable>
 
               <Pressable
-                style={[styles.confirmationButton, styles.deleteButton]}
+                style={styles.confirmationDeleteButton}
                 onPress={confirmDelete}
+                android_ripple={{ color: 'rgba(255,255,255,0.1)' }}
               >
                 <MaterialIcons name="delete" size={24} color="#FFF" />
                 <Text style={styles.confirmationButtonText}>Excluir</Text>
@@ -949,14 +957,17 @@ const ListScreen = ({ route, navigation, isDarkMode }) => {
 };
 
 const styles = StyleSheet.create({
+  // ==================== Estilos do Container Principal ====================
   container: {
     flex: 1,
-    padding: 12,
+    padding: 8,
     backgroundColor: '#F5F5F5',
   },
   darkBackground: {
     backgroundColor: '#121212',
   },
+
+  // ==================== Estilos da Barra de Pesquisa ====================
   searchWrapper: {
     zIndex: 999,
     marginBottom: 12,
@@ -997,22 +1008,8 @@ const styles = StyleSheet.create({
   darkSearchInput: {
     color: '#fff',
   },
-  loadingIndicator: {
-    marginTop: 20,
-  },
-  productItem: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  darkProductItem: {
-    backgroundColor: '#333',
-  },
+  
+  // ==================== Estilos das Opções de Filtro ====================
   filterOptions: {
     position: 'absolute',
     top: '100%',
@@ -1046,25 +1043,62 @@ const styles = StyleSheet.create({
   darkFilterOption: {
     borderColor: '#444',
   },
-  darkFilterOptionSelected: {
-    backgroundColor: '#1e88e5',
-  },
   filterOptionText: {
     marginLeft: 12,
     fontSize: 15,
     color: '#666',
     fontWeight: '500',
   },
-  filterOptionTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
+  
+  // ==================== Estilos da Lista de Produtos ====================
+  productItem: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginVertical: 4,
+    marginHorizontal: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  darkFilterOptionText: {
-    color: '#fff',
+  darkProductItem: {
+    backgroundColor: '#333',
   },
-  swipeable: {
-    marginBottom: 8,
+  emptyList: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
   },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  darkEmptyText: {
+    color: '#999',
+  },
+  
+  // ==================== Estilos das Estatísticas ====================
+  statsContainer: {
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statsText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  darkStatsText: {
+    color: '#aaa',
+  },
+
+  // ==================== Estilos das Ações de Swipe ====================
   actionsContainer: {
     width: 180,
     height: '100%',
@@ -1085,7 +1119,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
-    marginHorizontal: 4,
+    marginHorizontal: 4.5,
     elevation: 3,
   },
   actionButtonContent: {
@@ -1115,36 +1149,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  emptyList: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  darkEmptyText: {
-    color: '#999',
-  },
-  statsContainer: {
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statsText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  darkStatsText: {
-    color: '#aaa',
-  },
+
+  // ==================== Estilos Base dos Modais ====================
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -1172,22 +1178,22 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
-  },
-  darkText: {
-    color: '#FFFFFF',
+    marginBottom: 12,
   },
   productName: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+    paddingHorizontal: 20,
   },
+
+  // ==================== Estilos do Modal de Tratativas ====================
   quantitySection: {
     backgroundColor: '#F5F5F5',
     borderRadius: 15,
@@ -1276,36 +1282,80 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  cancelButton: {
+  treatmentCancelButton: {
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#757575',
     alignItems: 'center',
+    marginTop: 16,
+    width: '100%',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
-  darkCancelButton: {
-    backgroundColor: '#2A2A2A',
+  darkTreatmentCancelButton: {
+    backgroundColor: '#424242',
     borderWidth: 1,
-    borderColor: '#404040',
+    borderColor: '#505050',
   },
-  cancelButtonText: {
+  treatmentCancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // ==================== Estilos do Modal de Confirmação de Exclusão ====================
+  confirmationText: {
+    fontSize: 16,
     color: '#666',
+    textAlign: 'center',
+    marginVertical: 24,
+    lineHeight: 24,
   },
-  leftActionsContainer: {
-    width: 100,
-    height: '100%',
+  confirmationButtons: {
     flexDirection: 'row',
-    backgroundColor: 'transparent',
-    marginLeft: 10,
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 16,
   },
-  leftActionsWrapper: {
+  confirmationCancelButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingVertical: 6,
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#757575',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
+  confirmationDeleteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#D32F2F',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  confirmationButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+
+  // ==================== Estilos de Ordenação ====================
   sortContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1345,42 +1395,24 @@ const styles = StyleSheet.create({
   activeSortButtonText: {
     color: '#fff',
   },
-  confirmationText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  confirmationButtons: {
+
+  // ==================== Estilos das Ações da Esquerda ====================
+  leftActionsContainer: {
+    width: 100,
+    height: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 10,
+    backgroundColor: 'transparent',
+    marginLeft: 10,
   },
-  confirmationButton: {
+  leftActionsWrapper: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 12,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    justifyContent: 'flex-start',
+    paddingVertical: 6,
   },
-  cancelButton: {
-    backgroundColor: '#757575',
-  },
-  deleteButton: {
-    backgroundColor: '#D32F2F',
-  },
-  confirmationButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+  loadingIndicator: {
+    marginTop: 20,
   },
 });
 
