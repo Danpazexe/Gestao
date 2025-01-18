@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, Alert, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, Alert, StyleSheet, TouchableOpacity, ScrollView, TextInput, Animated, ActivityIndicator } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import Dados from '../../assets/Dados.json'; // ou importação de onde os dados estão salvos
@@ -18,8 +18,13 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [productId, setProductId] = useState(null);
-  const [errors, setErrors] = useState({});
   const [showErrors, setShowErrors] = useState(false);
+  const [isSavePressed, setIsSavePressed] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [showHistory, setShowHistory] = useState(false);
+  const [recentProducts, setRecentProducts] = useState([]);
+  const [historyAnimation] = useState(new Animated.Value(0));
 
   useEffect(() => {
     // Função que carrega os dados do produto para edição
@@ -45,55 +50,91 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
       console.log("Código EAN recebido da rota:", route.params.barcodeData);  // Log para verificar o EAN recebido
     }
 
+    const headerButtonStyle = {
+      padding: 8,
+      borderRadius: 8,
+      marginLeft: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1a4645' : 'rgba(255, 255, 255, 0.2)',
+    };
+
     navigation.setOptions({
       headerShown: true,
       headerStyle: {
-        backgroundColor: isDarkMode ? '#3b4f43' : '#5d7e62',
+        backgroundColor: isDarkMode ? '#1a4645' : '#2d5a57',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
       },
       headerTintColor: '#FFFFFF',
-      headerTitle: isEditing ? 'Editar Produto' : 'Cadastro de Produto',
+      headerTitleStyle: {
+        fontSize: 20,
+        fontWeight: '600',
+        letterSpacing: 0.5,
+      },
+      headerTitle: () => (
+        <View style={styles.headerTitleContainer}>
+          <MaterialCommunityIcons 
+            name={isEditing ? "pencil-circle" : "plus-circle"} 
+            size={24} 
+            color="#FFFFFF" 
+          />
+          <Text style={styles.headerTitleText}>
+            {isEditing ? 'Editar Produto' : 'Cadastrar Produto'}
+          </Text>
+        </View>
+      ),
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', marginRight: 8 }}>
+          <TouchableOpacity 
+            style={[
+              headerButtonStyle,
+              showHistory && { backgroundColor: isDarkMode ? '#2d5a57' : '#1a4645' }
+            ]}
+            onPress={() => {
+              loadRecentProducts();
+              setShowHistory(!showHistory);
+            }}
+          >
+            <MaterialCommunityIcons 
+              name="history" 
+              size={24} 
+              color="#FFF" 
+            />
+          </TouchableOpacity>
+        </View>
+      ),
     });
 
     loadProductData();
-  }, [navigation, route.params?.product, route.params?.barcodeData, isDarkMode]);
+  }, [navigation, route.params?.product, route.params?.barcodeData, isDarkMode, isEditing, showHistory]);
 
-  // Função para validar os campos
-  const validateInputs = () => {
-    if (!productName || !quantidade || !lote || !codprod || !codauxiliar || !validade) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos obrigatórios');
-      console.log("Validação falhou: Campos obrigatórios não preenchidos");  
-      return false;
+  useEffect(() => {
+    if (showErrors) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
-    if (isNaN(parseInt(quantidade, 10))) {
-      Alert.alert('Erro', 'Quantidade deve ser um número válido');
-      console.log("Validação falhou: Quantidade não é um número válido");  
-      return false;
-    }
-    console.log("Validação bem-sucedida");  // Log para confirmar que a validação passou
-    return true;
-  };
+  }, [showErrors]);
+
+  useEffect(() => {
+    animateHistory(showHistory);
+  }, [showHistory]);
 
   // Função para buscar no Dados.json
   const handleBarcodeScan = (scannedEan) => {
-    const formattedScannedEan = String(scannedEan).trim(); // Garantir que o EAN seja uma string
-    console.log("EAN escaneado:", formattedScannedEan);  // Log para verificar o EAN escaneado
-  
-    // Encontrar o produto no JSON com base no EAN
+    const formattedScannedEan = String(scannedEan).trim();
     const product = Dados.find(p => String(p.CODAUXILIAR).trim() === formattedScannedEan);
   
     if (product) {
-      // Log para verificar os dados do produto
-      console.log("Produto encontrado:", product);
-  
-      // Verifique os valores antes de atualizá-los
-      console.log("CODPROD:", product.CODPROD);
-      console.log("CODAUXILIAR:", product.CODAUXILIAR);
-      console.log("DESCRICAO:", product.DESCRICAO);
-      
-      // Preenchendo os campos corretamente
-      setProductName(product.DESCRICAO);  // Nome do produto
-      setcodprod(String(product.CODPROD)); // Garantir que CODPROD seja uma string
-      setEan(String(product.CODAUXILIAR)); // Garantir que CODAUXILIAR seja uma string
+      setProductName(product.DESCRICAO);
+      setcodprod(String(product.CODPROD));
+      setEan(String(product.CODAUXILIAR));
       
       Toast.show({
         type: 'success',
@@ -114,6 +155,7 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
   };
   
   const handleSaveProduct = async () => {
+    setIsSaving(true);
     setShowErrors(true);
 
     const hasEmptyFields = ['productName', 'lote', 'quantidade', 'codprod', 'codauxiliar', 'validade'].some(field => 
@@ -128,6 +170,7 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
         visibilityTime: 3000,
         position: 'top',
       });
+      setIsSaving(false);
       return;
     }
 
@@ -183,6 +226,8 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
         visibilityTime: 3000,
         position: 'top',
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -270,16 +315,22 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
     },
     scrollViewContent: {
       flexGrow: 1,
-      paddingBottom: 20, // Espaço extra no final da rolagem
+      paddingBottom: 20,
     },
     headerGradient: {
       padding: 16,
+    },
+    headerContent: {
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
     },
     headerTitle: {
       color: '#FFFFFF',
       fontSize: 22,
       fontWeight: 'bold',
+      marginLeft: 8,
     },
     formCard: {
       margin: 16,
@@ -293,7 +344,7 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
       shadowRadius: 3.84,
     },
     fieldContainer: {
-      marginBottom: 16, // Aumentado o espaçamento entre campos
+      marginBottom: 16,
     },
     rowContainer: {
       flexDirection: 'row',
@@ -314,6 +365,18 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
       borderColor: isDarkMode ? '#404040' : '#E0E0E0',
       backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
       padding: 4,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.18,
+      shadowRadius: 1.00,
+      elevation: 1,
+    },
+    focusedInput: {
+      borderColor: isDarkMode ? '#3d7a77' : '#2d5a57',
+      borderWidth: 2,
     },
     input: {
       flex: 1,
@@ -348,7 +411,7 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
     scanButton: {
       width: 45,
       height: 45,
-      backgroundColor: isDarkMode ? '#4A6B50' : '#5d7e62',
+      backgroundColor: isDarkMode ? '#2d5a57' : '#1a4645',
       borderRadius: 8,
       justifyContent: 'center',
       alignItems: 'center',
@@ -366,12 +429,24 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
     },
     saveButton: {
       flexDirection: 'row',
-      backgroundColor: isDarkMode ? '#4A6B50' : '#5d7e62',
+      backgroundColor: isDarkMode ? '#2d5a57' : '#1a4645',
       height: 50,
       borderRadius: 8,
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: 16,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    saveButtonPressed: {
+      opacity: 0.8,
+      transform: [{ scale: 0.98 }]
     },
     saveButtonText: {
       color: '#FFFFFF',
@@ -409,25 +484,115 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
       color: isDarkMode ? '#FF6B6B' : '#B00020',
       marginLeft: 4,
     },
+    headerTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    headerTitleText: {
+      color: '#FFFFFF',
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+    headerButton: {
+      marginRight: 16,
+      padding: 8,
+    },
+    historyOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent: 'flex-start',
+    },
+    historyContainer: {
+      position: 'absolute',
+      top: 80,
+      right: 16,
+      width: '80%',
+      backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF',
+      borderRadius: 12,
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      padding: 16,
+      zIndex: 1000,
+    },
+    historyHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    historyTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    historyTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    closeButton: {
+      padding: 4,
+    },
+    historyItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: isDarkMode ? '#333333' : '#E0E0E0',
+    },
+    historyText: {
+      marginLeft: 12,
+      fontSize: 16,
+    },
   });
 
   // Use os estilos dentro do componente
   const styles = getStyles(isDarkMode);
+
+  const loadRecentProducts = async () => {
+    const existingProducts = await AsyncStorage.getItem('products');
+    let products = existingProducts ? JSON.parse(existingProducts) : [];
+    setRecentProducts(products.slice(-5));
+  };
+
+  const handleCopyFromHistory = (product) => {
+    setProductName(product.descricao);
+    setcodprod(product.codprod);
+    setEan(product.codauxiliar);
+    
+    Toast.show({
+      type: 'success',
+      text1: 'Produto Copiado',
+      text2: 'Dados do produto copiados com sucesso',
+      position: 'top',
+    });
+  };
+
+  const animateHistory = (show) => {
+    Animated.spring(historyAnimation, {
+      toValue: show ? 1 : 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11
+    }).start();
+  };
+
+  const handleOutsidePress = () => {
+    setShowHistory(false);
+  };
 
   return (
     <View style={[
       styles.container, 
       isDarkMode ? styles.darkBackground : styles.lightBackground
     ]}>
-      <LinearGradient
-        colors={isDarkMode ? ['#1E272E', '#2C3A47'] : ['#5d7e62', '#3b4f43']}
-        style={styles.headerGradient}
-      >
-        <Text style={styles.headerTitle}>
-          {isEditing ? 'Editar Produto' : 'Novo Produto'}
-        </Text>
-      </LinearGradient>
-
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -437,7 +602,8 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
           {/* Campo Nome do Produto */}
           <View style={styles.fieldContainer}>
             <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
-              Nome do Produto
+              <MaterialCommunityIcons name="package-variant" size={18} color={isDarkMode ? '#FFFFFF' : '#333333'} />
+              {' '}Nome do Produto
             </Text>
             <View style={[
               styles.inputContainer,
@@ -453,7 +619,14 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
               {renderFieldStatus('productName')}
             </View>
             {showErrors && checkEmptyFields('productName') && (
-              <Text style={styles.requiredText}>Campo obrigatório</Text>
+              <Animated.Text 
+                style={[
+                  styles.requiredText,
+                  { opacity: fadeAnim }
+                ]}
+              >
+                Campo obrigatório
+              </Animated.Text>
             )}
           </View>
 
@@ -461,7 +634,8 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
           <View style={styles.rowContainer}>
             <View style={[styles.fieldContainer, { flex: 1, marginRight: 10 }]}>
               <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
-                Lote
+                <MaterialCommunityIcons name="barcode-scan" size={18} color={isDarkMode ? '#FFFFFF' : '#333333'} />
+                {' '}Lote
               </Text>
               <View style={[
                 styles.inputContainer,
@@ -477,13 +651,21 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
                 {renderFieldStatus('lote')}
               </View>
               {showErrors && checkEmptyFields('lote') && (
-                <Text style={styles.requiredText}>Campo obrigatório</Text>
+                <Animated.Text 
+                  style={[
+                    styles.requiredText,
+                    { opacity: fadeAnim }
+                  ]}
+                >
+                  Campo obrigatório
+                </Animated.Text>
               )}
             </View>
 
             <View style={[styles.fieldContainer, { flex: 1 }]}>
               <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
-                Quantidade
+                <MaterialCommunityIcons name="numeric" size={18} color={isDarkMode ? '#FFFFFF' : '#333333'} />
+                {' '}Quantidade
               </Text>
               <View style={[
                 styles.inputContainer,
@@ -500,7 +682,14 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
                 {renderFieldStatus('quantidade')}
               </View>
               {showErrors && checkEmptyFields('quantidade') && (
-                <Text style={styles.requiredText}>Campo obrigatório</Text>
+                <Animated.Text 
+                  style={[
+                    styles.requiredText,
+                    { opacity: fadeAnim }
+                  ]}
+                >
+                  Campo obrigatório
+                </Animated.Text>
               )}
             </View>
           </View>
@@ -508,7 +697,8 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
           {/* Campo Código Interno */}
           <View style={styles.fieldContainer}>
             <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
-              Código Interno
+              <MaterialCommunityIcons name="identifier" size={18} color={isDarkMode ? '#FFFFFF' : '#333333'} />
+              {' '}Código Interno
             </Text>
             <View style={[
               styles.inputContainer,
@@ -525,14 +715,22 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
               {renderFieldStatus('codprod')}
             </View>
             {showErrors && checkEmptyFields('codprod') && (
-              <Text style={styles.requiredText}>Campo obrigatório</Text>
+              <Animated.Text 
+                style={[
+                  styles.requiredText,
+                  { opacity: fadeAnim }
+                ]}
+              >
+                Campo obrigatório
+              </Animated.Text>
             )}
           </View>
 
           {/* Campo EAN */}
           <View style={styles.fieldContainer}>
             <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
-              EAN
+              <MaterialCommunityIcons name="barcode" size={18} color={isDarkMode ? '#FFFFFF' : '#333333'} />
+              {' '}EAN
             </Text>
             <View style={styles.eanContainer}>
               <View style={[
@@ -558,14 +756,22 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
               </TouchableOpacity>
             </View>
             {showErrors && checkEmptyFields('codauxiliar') && (
-              <Text style={styles.requiredText}>Campo obrigatório</Text>
+              <Animated.Text 
+                style={[
+                  styles.requiredText,
+                  { opacity: fadeAnim }
+                ]}
+              >
+                Campo obrigatório
+              </Animated.Text>
             )}
           </View>
 
           {/* Campo Data de Validade */}
           <View style={styles.fieldContainer}>
             <Text style={[styles.label, isDarkMode ? styles.darkText : styles.lightText]}>
-              Data de Validade
+              <MaterialCommunityIcons name="calendar-clock" size={18} color={isDarkMode ? '#FFFFFF' : '#333333'} />
+              {' '}Data de Validade
             </Text>
             <View style={[
               styles.inputContainer,
@@ -587,7 +793,14 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
               {renderFieldStatus('validade')}
             </View>
             {showErrors && checkEmptyFields('validade') && (
-              <Text style={styles.requiredText}>Campo obrigatório</Text>
+              <Animated.Text 
+                style={[
+                  styles.requiredText,
+                  { opacity: fadeAnim }
+                ]}
+              >
+                Campo obrigatório
+              </Animated.Text>
             )}
           </View>
 
@@ -605,15 +818,91 @@ const AddProductScreen = ({ navigation, route, isDarkMode }) => {
           <TouchableOpacity 
             style={styles.saveButton} 
             onPress={handleSaveProduct}
-            activeOpacity={0.8}
+            disabled={isSaving}
           >
-            <MaterialCommunityIcons name="content-save" size={24} color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>
-              {isEditing ? 'Atualizar' : 'Salvar'}
-            </Text>
+            {isSaving ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="content-save" size={24} color="#FFFFFF" />
+                <Text style={styles.saveButtonText}>
+                  {isEditing ? 'Atualizar' : 'Salvar'}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {showHistory && (
+        <TouchableOpacity 
+          style={styles.historyOverlay} 
+          activeOpacity={1} 
+          onPress={handleOutsidePress}
+        >
+          <Animated.View 
+            style={[
+              styles.historyContainer,
+              {
+                transform: [
+                  {
+                    translateY: historyAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-20, 0]
+                    })
+                  }
+                ],
+                opacity: historyAnimation
+              }
+            ]}
+          >
+            <TouchableOpacity 
+              activeOpacity={1} 
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View style={styles.historyHeader}>
+                <View style={styles.historyTitleContainer}>
+                  <MaterialCommunityIcons 
+                    name="history" 
+                    size={24} 
+                    color={isDarkMode ? '#FFFFFF' : '#333333'} 
+                  />
+                  <Text style={[styles.historyTitle, isDarkMode ? styles.darkText : styles.lightText]}>
+                    Produtos Recentes
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.closeButton}
+                  onPress={() => setShowHistory(false)}
+                >
+                  <MaterialCommunityIcons 
+                    name="close-circle" 
+                    size={28} 
+                    color={isDarkMode ? '#FF6B6B' : '#B00020'} 
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {recentProducts.map((product, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.historyItem}
+                  onPress={() => handleCopyFromHistory(product)}
+                >
+                  <MaterialCommunityIcons 
+                    name="package-variant" 
+                    size={24} 
+                    color={isDarkMode ? '#B39DDB' : '#673AB7'} 
+                  />
+                  <Text style={[styles.historyText, isDarkMode ? styles.darkText : styles.lightText]}>
+                    {product.descricao}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
