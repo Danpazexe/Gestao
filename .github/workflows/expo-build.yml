@@ -1,4 +1,4 @@
-name: 📱 Build do Android
+name: 📱 Expo Build Android
 on:
   push:
     branches: [main]
@@ -7,39 +7,31 @@ on:
 
 jobs:
   build:
-    name: 🛠️ Construir App Android
+    name: 🛠️ Build Android App
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Baixar repositório
-        uses: actions/checkout@v4
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v3
 
-      - name: 🟢 Configurar Node
-        uses: actions/setup-node@v4
+      - name: 🟢 Setup Node
+        uses: actions/setup-node@v3
         with:
           node-version: 18.x
           cache: npm
 
-      - name: 📦 Instalar dependências
-        run: |
-          npm ci --prefer-offline --no-audit
-          npm install -g eas-cli@latest
-
-      - name: 📱 Configurar EAS
+      - name: 📱 Setup EAS
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-          
-      - name: ⚡ Cache do EAS
-        uses: actions/cache@v3
-        with:
-          path: ~/.eas-cli
-          key: eas-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            eas-${{ runner.os }}-
 
-      - name: 🏗️ Construir app Android
-        run: eas build --platform android --non-interactive --profile preview --no-wait
+      - name: 📦 Install dependencies
+        run: |
+          npm ci
+          npm install -g eas-cli
+
+      - name: 🏗️ Build Android app
+        run: eas build --platform android --non-interactive --profile preview
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
